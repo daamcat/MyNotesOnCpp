@@ -16,3 +16,48 @@ One of the first and most basic solutions is the class `std::auto_ptr`. `std::au
 * `std::unique_ptr`: Use this by default.
 * `std::shared_ptr`: Use if the ownership of pointer has to be shared.
 * `std::weak_ptr`: ???
+
+An small example of `std::unique_ptr`:
+```c++
+#include <memory>
+#include <iostream>
+#include <string>
+
+class Dog
+{
+    public:
+    Dog()
+    {
+        std::cout << "Class Dog constructor" << std::endl;
+    }
+    ~Dog()
+    {
+        std::cout << "Class Dog destructor" << std::endl;
+    }
+
+    void bark()
+    {
+        std::cout << "Haap! Haap!" << std::endl;
+    }
+};
+
+int main(int argc, char* argv[])
+{
+    std::unique_ptr dog = std::make_unique<Dog>();
+    dog->bark();
+
+    return 0;
+}
+```
+[Run in Compiler Explorer](https://godbolt.org/z/39M1qn1jv)
+
+Prints:
+```
+Class Dog constructor
+Haap! Haap!
+Class Dog destructor
+```
+#### Pointer vs reference
+* Reference refers to an object. It must be initialized by referring to an object and after that, it can not refer to another object.
+* Pointer can point to an object and then it can be modified to point to another object, or point to nothing, `nullptr` or `NULL`.
+We use reference anytime possible. And we use pointer anytime we have to.
