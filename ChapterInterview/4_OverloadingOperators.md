@@ -95,6 +95,6 @@ d+=c; d.getVal() : 28
 * Member operators that don't modify the object, like `+`, `==`, `*`, should be `const`.
 * Member operators that modify the object, like `+=`, `-=`, `=`, should not be `const`.
 * Non-member operators can not be `const`.
-* Constructive operators, operators that *construct* new objects, like `c = a + b;`, should not change their operands. I.e. the member function must be `const` and the input argument must be ` const reference.
+* Constructive operators, operators that *construct* new objects, like `c = a + b;`, should not change their operands. I.e. the member function must be `const` and the input argument must be `const` reference.
 * Constructive operators should return their result by value.
 
