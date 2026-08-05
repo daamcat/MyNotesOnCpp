@@ -5,8 +5,6 @@ doesn't harm encapsulation, even helps to improve it. In below example, notice h
 
 An example of `friend` classes. In this example we see how we can divide one complete class to two smaller classes. These two classes being `friend` of each other makes it possible for the classes to 
 communicate with each other and access their `private` member variables, at the same time that their private members are hidden from outside the classes:
-
-(Sidenote: Notice how we use `std::unique_ptr` and `std::move` its ownership to an object)
 ```c++
 #include <iostream>
 #include <string>
@@ -106,5 +104,6 @@ Prints:
 ```
 Car is driving ...
 ```
-
+* Notice how we use `std::unique_ptr` and `std::move` its ownership to an object.
+* `friend`ship is not reciprocal: `CarModern` says `FuelSystem` is his `fried`: `friend class FuelSystem;`. `CarModern` says `FuelSystem` can have access to its `private` members. But this automatically does not mean that `CarModern` also can have access `private` members of `FuelSystem`. `CarModern` grants this access to `FuelSystem`. `FuelSystem` may do that too, or may not (here it does).
 
