@@ -36,12 +36,12 @@ mutable bool enabled = false;
 > Common *qualifier*s:
 > * `const`: The value can not be modified.
 > * `volatile`: The value may change unexpectedly.
+> * `mutable`: Allows data member to be modified even inside a `const` object!
+
 `volatile` tells the compiler: this variable can change anytime by something unexpected, for example some sensory info from hardware. So check the value before using it. Question: Doesn't the compiler do so for any normal variable? The answer seems to be negative! If the code is like:
 ```c++
 int x = 5;
 <some code without variable x>
 std::cout << x << std::endl;
 ```
-The compiler doesn't bother itself to make sure that x is still 5 and prints 5 at output. But if we write `volatile int x = 5;`, then the compiler checks the value every time the variable is used. So with `volatile` we tell compiler: Be careful of this variable and check it every time before using it. because it can change without you knowing it! 
-> * `mutable`: Allows data member to be modified even inside a `const` object!
-
+The compiler doesn't bother itself to make sure that x is still 5 and prints 5 at output. But if we write `volatile int x = 5;`, then the compiler checks the value every time the variable is used. So with `volatile` we tell compiler: Be careful of this variable and check it every time before using it, because it can change without you knowing it!
