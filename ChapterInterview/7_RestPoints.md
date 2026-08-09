@@ -45,3 +45,19 @@ int x = 5;
 std::cout << x << std::endl;
 ```
 The compiler doesn't bother itself to make sure that x is still 5 and prints 5 at output. But if we write `volatile int x = 5;`, then the compiler checks the value every time the variable is used. So with `volatile` we tell compiler: Be careful of this variable and check it every time before using it, because it can change without you knowing it!
+
+#### Keyword `inline`
+The keyword `inline` has two major applications:
+1. Compilation optimization: Using `inline` for this purpose is not necessary in modern C++ anymore because the compiler itself decides whether to `inline` a function for optimization.
+2. Solving the problem of "multiple definitions".
+
+In C++ we can not have multiple function *definition*s for one function *declaration*. This is called "One Definition Rule" or ODR. Now imagine that we have a header file with a function in it:
+```c++
+int add (int a , int b)
+{
+  return a+b;
+}
+```
+If we `#include` this header in multiple source files and somehow it ends up adding this header multiple times, the compiler will complain that we have multiple definitions. Now if we add the keyword/specifier `inline`, the compiler will accept that there is only one definition of function.
+
+Normally we put the definition of `inline` function in header file as well.
