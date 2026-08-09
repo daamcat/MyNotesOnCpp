@@ -1,6 +1,6 @@
 ### Questions and answers:
 
-#### "identifier"
+#### Identifier
 An "identifier" is simply the name given to something in a program. For example in below code, `age` is an identifier.
 ```c++
 int age = 20;
@@ -26,4 +26,15 @@ int main(int argc, char* argv[])
     return 0;
 }
 ```
+#### Qualifier
+A *qualifier* comes with *identifier* and adds extra information/limitation to the variable. Examples:
+```c++
+const int age = 10;
+volatile int x = 30;
+mutable bool enabled = false;
+```
+> Common *qualifier*s:
+> * `const`: The value can not be modified.
+> * `volatile`: The value may change unexpectedly.
+> * `mutable`: Allows data member to be modified even inside a `const` object!
 
