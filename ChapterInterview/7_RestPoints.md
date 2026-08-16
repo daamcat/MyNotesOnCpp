@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-# Type size
+### Type size
 When we say:
 ```
 Blah y = Blah x + 1
