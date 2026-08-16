@@ -151,3 +151,52 @@ int main(int argc, char* argv[])
     return 0;
 }
 ```
+
+# Type size
+When we say:
+```
+Blah y = Blah x + 1
+```
+this `1` here does not necessarily mean an integer. It depends how we interpret it. How we `cast` it.
+
+The function `sizeof()` is a C++ operator which gives us the size of type objects in bytes. For example:
+```
+std::cout << "sizeof(int32_t): " << sizeof(int32_t) << ", sizeof(int64_t): " << sizeof(int64_t) << std::endl;
+```
+prints: `sizeof(int32_t): 4, sizeof(int64_t): 8`.
+
+The idea is to measure the size of a type, for example `int` without using the operator `sizeof()`. 
+```c++
+#include <iostream>
+#include <string>
+#include <cstdint>
+
+struct Car
+{
+    std::string name;
+    int32_t price;
+};
+
+int main(int argc, char* argv[])
+{
+    int32_t* i;
+    int32_t* j = i + 1;
+    std::cout << "int32_t size: " << reinterpret_cast<std::uintptr_t>(j) - reinterpret_cast<std::uintptr_t>(i) << std::endl;
+    std::cout << "sizeof(int32_t): " << sizeof(int32_t) << ", sizeof(int64_t): " << sizeof(int64_t) << std::endl; 
+    std::cout << "sizeof(Car): " << sizeof(Car) << std::endl; 
+    return 0;
+}
+```
+prints:
+```
+int32_t size: 4
+sizeof(int32_t): 4, sizeof(int64_t): 8
+sizeof(Car): 40
+```
+Notice that the type of `i` is not `int32_t`. The type of `i` is `a pointer to int32_t`. So when we say `j = i + 1`, this is not that we add `1` to an `int`. The unit of `1` is not `int`. The unit of `1` is `int32_t*`. So `j` and `i` have one unit distance from each other. Unit `int32_t*`. Now in order to convert these addresses to int, we use the casting `reinterpret_cast<std::uintptr_t>`. We read `std::unitptr_t` _is an unsigned integer type that is capable of storing a data pointer_.
+
+### streams
+
+
+
+
