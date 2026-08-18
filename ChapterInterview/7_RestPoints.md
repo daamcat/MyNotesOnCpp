@@ -46,6 +46,29 @@ std::cout << x << std::endl;
 ```
 The compiler doesn't bother itself to make sure that x is still 5 and prints 5 at output. But if we write `volatile int x = 5;`, then the compiler checks the value every time the variable is used. So with `volatile` we tell compiler: Be careful of this variable and check it every time before using it, because it can change without you knowing it!
 
+One of the major applications of `volatile` is when a function is running in another thread, for example using `QtConcurrent::run()` and we want to be able to cancel it anytime from main thread. In this scenario, `volatile bool* canceled` is passed as input argument to the function which is going to be run by `QtConcurrent::run()`. For example:
+```c++
+int32_t ClassName::convertImages(const std::string& path, volatile bool* canceled)
+{
+ ...
+}
+
+volatile bool canceled {false};
+std::string path {"path/to/folder"};
+int32_t error = 0;
+
+QFutureWatcher<int32_t> futureWatcher;
+QObject::connect(&futureWatcher, &QFutureWatcher<int32_t>::finished, [&]()
+  {
+    error = futureWatcher.result();
+  }
+);
+
+QFuture<int32_t> future = QtConcurrent::run(this, &ClassName::convertImages, path, &canceled);
+futureWatcher.setFuture(future);
+```
+Now anytime we want to cancel `ClassName::convertImages`, we just set `canceled` to `true`. Using *qualifier* `volatile` here doesn't let the compiler to apply optimization on the variable, since optimization can cause the compiler to neglect the change of variable and assume it as a constant. 
+
 ### Keyword `inline`
 The keyword `inline` has two major applications:
 1. Compilation optimization: Using `inline` for this purpose is not necessary in modern C++ anymore because the compiler itself decides whether to `inline` a function for optimization.
