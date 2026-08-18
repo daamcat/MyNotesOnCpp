@@ -51,6 +51,11 @@ One of the major applications of `volatile` is when a function is running in ano
 int32_t ClassName::convertImages(const std::string& path, volatile bool* canceled)
 {
  ...
+ if (*canceled)
+ {
+   return;
+ }
+ ...
 }
 
 volatile bool canceled {false};
