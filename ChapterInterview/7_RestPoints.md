@@ -53,7 +53,7 @@ int32_t ClassName::convertImages(const std::string& path, volatile bool* cancele
  ...
  if (*canceled)
  {
-   return;
+   return 1;
  }
  ...
 }
