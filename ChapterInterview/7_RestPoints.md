@@ -72,7 +72,9 @@ QObject::connect(&futureWatcher, &QFutureWatcher<int32_t>::finished, [&]()
 QFuture<int32_t> future = QtConcurrent::run(this, &ClassName::convertImages, path, &canceled);
 futureWatcher.setFuture(future);
 ```
-Now anytime we want to cancel `ClassName::convertImages`, we just set `canceled` to `true`. Using *qualifier* `volatile` here doesn't let the compiler to apply optimization on the variable, since optimization can cause the compiler to neglect the change of variable and assume it as a constant. 
+Now anytime we want to cancel `ClassName::convertImages`, we just set `canceled` to `true`. Using *qualifier* `volatile` here doesn't let the compiler to apply optimization on the variable, since optimization can cause the compiler to neglect the change of variable and assume it as a constant.
+
+For more detailed explanation on using `volatile` for canceling a thread, refer to the book *Advanced Qt Programming* by *Mark Summerfield*, Chapter 7.
 
 ### Keyword `inline`
 The keyword `inline` has two major applications:
