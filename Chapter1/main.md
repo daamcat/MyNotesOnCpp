@@ -163,5 +163,3 @@ my_project/
     └── external_lib/
 
 ```
-
-Hallo Sarah!
