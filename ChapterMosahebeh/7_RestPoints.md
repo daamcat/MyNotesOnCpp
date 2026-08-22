@@ -7,6 +7,17 @@ int age = 20;
 ```
 Therefore, variable names, class names, function names, etc, are all *identifier*s.
 
+### Namespace
+Imagine an application using several libraries. If there are global variables with same name in different libraries, *name collision* will happen. `namespace` declares a named scope for each library and eliminates *name collision*.
+
+In below code, *namespace identifier* is `blah::blih::bluh`:
+```c++
+namespace blah::blih::bluh
+{
+
+} 
+```
+
 ### Scope resolution operator `::`
 We use *scope resolution identifier* (`::`) to specify the *scope* to which an *identifier* belongs. We use *scope resolution identifier* (`::`) to show what we want from which *scope*. 
 
