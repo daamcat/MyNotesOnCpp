@@ -267,13 +267,13 @@ int main(int argc, char* argv[])
    std::cout << "a = " << a << std::endl; // Prints: a = 5
    return 0;
 }
-´´´
+```
 One more useful use case of `using` is to avoid typing namespaces:
 ```c++
 #include <iostream>
 #include <string>
 
-using namespace std;
+using namespace std; // This is NOT recommanded!!! Don't do this! Just forget "typedef" and "using"!
 
 int main(int argc, char* argv[])
 {
