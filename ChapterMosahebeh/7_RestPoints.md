@@ -193,6 +193,13 @@ int main(int argc, char* argv[])
 }
 ```
 
+### Temporary variable
+*Temporary variable*s are created when the compiler needs an unnamed intermediate object during execution of a function. When does the compiler need intermediate object?
+* Type conversion
+* Input parameter
+* Return value
+* ...
+
 ### Type size
 When we say:
 ```
