@@ -273,7 +273,7 @@ One more useful use case of `using` is to avoid typing namespaces:
 #include <iostream>
 #include <string>
 
-using namespace std; // This is NOT recommanded!!! Don't do this! Just forget "typedef" and "using"!
+using namespace std; // This is NOT recommended!!! Don't do this! Just forget "typedef" and "using"!
 
 int main(int argc, char* argv[])
 {
