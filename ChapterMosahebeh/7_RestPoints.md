@@ -285,8 +285,13 @@ int main(int argc, char* argv[])
 ```
 
 
+# Iterator classes vs range-based iteration
+An *iterator class* has been designed to provide itereration over *container class*es like 'std::vector' or 'std::list'.
 
 
+
+Range based iterations use internal mechanisms of container classes. 
+Unfinished
 
 ### streams
 
