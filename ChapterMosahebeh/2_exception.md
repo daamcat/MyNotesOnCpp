@@ -262,3 +262,89 @@ In exception handler of ExceptionCase2. e.what(): Initial error info for Excepti
 > * Derive/Inherit your exception class from `std::exception` or from one of its inherited classes, like `std::runtime_error`.
 > * When `catch()`ing the exception, catch by reference. E.g. catch(const MyException& e). Catching by value can show different behavior and catching by pointer is not recommanded.
 
+#### Stack unwinding
+*unwinding* literally means “going backward” or “undoing step by step”. *Stack unwinding* is the process of destroying local objects and removing function calls from the call stack as an exception propagates toward **a matching catch** block.
+
+Below example demonstrates how engaging object destructors are called when an exception is caught. This is a demonstration of *stack unwinding*:
+```c++
+#include <iostream>
+#include <string>
+#include <exception>
+
+struct Blah
+{
+    void func()
+    {
+        std::cout<<"Blah::func() is going to throw an exception..." << std::endl;
+        throw std::runtime_error("exception from Blah::func!");
+    }
+   
+   ~Blah()
+   {
+       std::cout<<"Blah destructor called."<<std::endl;
+   }
+};
+
+struct Bluh
+{
+    void func()
+    {
+        Blah blah;
+        blah.func();
+    }
+    ~Bluh()
+    {
+        std::cout<<"Bluh destructor called." << std::endl;
+    }
+};
+
+struct Blih
+{
+    void func()
+    {
+        Bluh bluh;
+        bluh.func();
+    }
+    ~Blih()
+    {
+        std::cout<<"Blih destructor called."<<std::endl;
+    }
+};
+
+int main(int argc, char* argv[])
+{
+    Blih blih;
+    try
+    {
+        blih.func();
+    }
+    catch(const std::exception& e )
+    {
+        std::cout<<"error message: " << e.what() << std::endl;
+    }
+   
+  return 0;
+}
+```
+
+prints:
+```
+Blah::func() is going to throw an exception...
+Blah destructor called.
+Bluh destructor called.
+error message: exception from Blah::func!
+Blih destructor called.
+```
+Notice how the destructors of `Blah` and then `Bluh` and then `Blih` are called. Till function `main()` where the matching exception is handled.
+
+
+
+
+
+
+
+
+
+
+
+
