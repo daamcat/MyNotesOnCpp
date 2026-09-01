@@ -277,6 +277,7 @@ struct Blah
     {
         std::cout<<"Blah::func() is going to throw an exception..." << std::endl;
         throw std::runtime_error("exception from Blah::func!");
+        std::cout<<"Blah::func(), one line after throwing an exception..." << std::endl;
     }
    
    ~Blah()
@@ -336,6 +337,89 @@ error message: exception from Blah::func!
 Blih destructor called.
 ```
 Notice how the destructors of `Blah` and then `Bluh` and then `Blih` are called. Till function `main()` where the matching exception is handled.
+
+Notice that the message `Blah::func(), one line after throwing an exception...` never gets printed. As soon as the exception is thrown, C++ goes ghrough *call stack* to see if it can find the matching exception handler and on its way, it calls the destructor of all objects on its way. 
+
+Moreover, notice that the exception being thrown from `Blah::func()` doesn't get caught till inside `main()`. For everything between these two (i. e. from `main()` to`Blah::func()`), the functions will be removed from *stack callback* or the objects will be destroyed due to *stack unwinding*. Below example is a modification of above example, but in below example, the matching exception will be caught and handled in `Bluh::func()`, way before in `main()`.
+
+```c++
+#include <iostream>
+#include <string>
+#include <exception>
+
+struct Blah
+{
+    void func()
+    {
+        std::cout<<"Blah::func() is going to throw an exception..." << std::endl;
+        throw std::runtime_error("exception from Blah::func!");
+        std::cout<<"Blah::func(), one line after throwing an exception..." << std::endl;
+    }
+   
+   ~Blah()
+   {
+       std::cout<<"Blah destructor called."<<std::endl;
+   }
+};
+
+struct Bluh
+{
+    void func()
+    {
+        Blah blah;
+        try
+        {
+            blah.func();
+        }
+        catch (const std::exception& e)
+        {
+            std::cout<<"exception inside Bluh::func(). Error message: " << e.what() << std::endl;
+        }
+    }
+    ~Bluh()
+    {
+        std::cout<<"Bluh destructor called." << std::endl;
+    }
+};
+
+struct Blih
+{
+    void func()
+    {
+        Bluh bluh;
+        bluh.func();
+    }
+    ~Blih()
+    {
+        std::cout<<"Blih destructor called."<<std::endl;
+    }
+};
+
+int main(int argc, char* argv[])
+{
+    Blih blih;
+    try
+    {
+        blih.func();
+    }
+    catch(const std::exception& e )
+    {
+        std::cout<<"error message: " << e.what() << std::endl;
+    }
+   
+  return 0;
+}
+```
+
+prints:
+```
+Blah::func() is going to throw an exception...
+exception inside Bluh::func(). Error message: exception from Blah::func!
+Blah destructor called.
+Bluh destructor called.
+Blih destructor called.
+```
+
 
 
 
