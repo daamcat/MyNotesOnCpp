@@ -1,4 +1,36 @@
 ## 3. Pointers
+An small example of a *pointer* and a *reference*:
+```c++
+include <iostream>
+#include <string>
+
+int main(int argc, char* argv[])
+{
+    int a = 5;
+    // a as integer is saved in an address. We access this adress with &a.
+    // A pointer always points to an address. The address of a variable.
+    // "Pointer points to an address" means the pointer stores an adress.
+    // So! We can say a pointer variables always stores an address on memory in it.
+    // In below line we declare pointer p. We should set this pointer equal to an address
+    // in memory. We access the address of variable a with &a:
+    int* p = &a;
+    std::cout<<"p="<< p << std::endl;
+    std::cout<<"*p="<< *p << std::endl;
+   
+    int& c = a;
+    std::cout<<"c="<< c << std::endl;
+    std::cout<<"&c="<< &c << std::endl;
+
+    return 0;
+}
+```
+Prints:
+```
+p=0x7ffedfd57d9c
+*p=5
+c=5
+&c=0x7ffedfd57d9c
+```
 * *Dangling pointer:* When the memory is released but the pointer still exists.
 * *Memory leak:* When the pointer doesn't exist anymore, mostly because it goes out of scope, but the memory is still allocated.
 
