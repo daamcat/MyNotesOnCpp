@@ -89,6 +89,55 @@ Class Dog constructor
 Haap! Haap!
 Class Dog destructor
 ```
+An small example of `std::shared_ptr` (Notice how the number of owners change when we pass `shared_ptr` by value (pass a copy):
+```c++
+#include <iostream>
+#include <string>
+#include <memory>
+
+void funA(std::shared_ptr<int> in)
+{
+    // Since funA takes a copy of smart pointer, funA will be one of the owners
+    // of the object that the input argument points to.
+    // std::shared_ptr<T>::use_count "Returns the number of different shared_ptr objects managing the current object":
+    std::cout<<"Inside funA: in.use_count()="<< in.use_count() << std::endl;  
+}
+
+void funB(const std::shared_ptr<int>& in)
+{
+    std::cout<<"Inside funB: in.use_count()="<< in.use_count() << std::endl;  
+}
+
+int main(int argc, char* argv[])
+{
+    int a = 5;
+    std::shared_ptr<int> sharedPtr = std::make_shared<int>(a);
+   
+    // Because funA takes a copy of shared_ptr as input argument, it (funA) will be one of the
+    // owners of the object pointed by shared_ptr. In this case, inside funA we expect the number
+    // of owners to be increased by one:
+    std::cout<<"Before funA: sharedPtr.use_count()="<< sharedPtr.use_count() << std::endl;  
+    funA(sharedPtr);
+    std::cout<<"After funA: sharedPtr.use_count()="<< sharedPtr.use_count() << std::endl;
+    
+    // Because funB takes a reference to shared_ptr, it (funB) doesn't add to the number of owners:
+    funB(sharedPtr);
+    std::cout<<"After funB: sharedPtr.use_count()="<< sharedPtr.use_count() << std::endl;
+
+    return 0;
+}
+```
+[Run in Compiler Explorer](https://godbolt.org/z/bfeon7Mqo)
+
+This prints:
+```
+Before funA: sharedPtr.use_count()=1
+Inside funA: in.use_count()=2
+After funA: sharedPtr.use_count()=1
+Inside funB: in.use_count()=1
+After funB: sharedPtr.use_count()=1
+```
+
 #### Pointer vs reference
 * Reference refers to an object. It must be initialized by referring to an object and after that, it can not refer to another object.
 * Pointer can point to an object and then it can be modified to point to another object, or point to nothing, `nullptr` or `NULL`.
