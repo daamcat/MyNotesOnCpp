@@ -50,3 +50,6 @@ public:
 };
 ```
 we will have `sizeof(Person) = 8`. This change is binary incompatible, because the compiler has built the application with the assumption that the size of class `Person` is 4.
+> **Don't confuse these:**
+> * API/Source compatibility: Can I compile my source code, app.cpp, against new version of library?
+> * ABI/Binary compatibility: Can my already-compiled application, app.exe, continue to work with the new version of library?
