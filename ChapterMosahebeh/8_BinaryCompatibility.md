@@ -9,8 +9,8 @@ int add(int a, int b)
 ```
 And we want to use this code in form of a *library* in an application. The C++ compiler can not use our source code of *library* directly in our *application*. The library must first be converted to machine language. We say the compiler converts our source code to machine language, called *binary* or *object file* or *library*.
 This compiler-generated binary library file is:
-* Linux: lib<LibraryName>.so
-* Windows: <LibraryName>.dll
+* Linux: `lib<LibraryName>.so` (As normal text I would write: lib\<LibraryName\>.so. Notice the backslashes in .md file!)
+* Windows: `<LibraryName>.dll`
 
 This binary library can be used in our application, if we *link against* it.
 
