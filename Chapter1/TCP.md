@@ -55,6 +55,7 @@ Generating buildsystem (generating build files) and building:
 In our example, the two `main.cpp` files are located in:
 * `G:\SenderReceiverTest\src\src\Moon\main.cpp`
 * `G:\SenderReceiverTest\src\src\Mars\main.cpp`
+
 We open `cmd` command prompt window in `G:\SenderReceiverTest` and insert:
 ```
 G:\SenderReceiverTest>cmake -S src -B build
@@ -400,6 +401,161 @@ G:\SenderReceiverTest>
 Now we can develop our code using VS Solution in: `G:\SenderReceiverTest\build\SenderReceiverTest.sln`
 
 #### Linux TO BE COMPLETED
+
+### First data exchange
+Here we have an initial working implementation in which `Moon` sends a Hello World message to `Mars`. The message has to end with a `\n` in this example.
+
+`G:\SenderReceiverTest\src\src\Mars\main.cpp`:
+```c++
+#include <iostream>
+#include <string>
+#include <boost/asio.hpp>
+
+
+int main()
+{
+  std::cout << "Hello World by Mars!" << std::endl;
+
+  /*
+  Synchronous TCP server:
+  Refs: 
+  https://www.boost.org/doc/libs/1_37_0/doc/html/boost_asio/overview/core/basics.html
+  https://www.boost.org/doc/libs/1_92_0/doc/html/boost_asio/tutorial/tutdaytime2.html
+  https://theboostcpplibraries.com/boost.asio-network-programming
+  */
+
+  try
+  {
+    int32_t portNumber = 12345;
+
+    // boost::asio::io_context is the modern replacement for boost::asio::io_service. It links our executable to I/O services of OS.
+    boost::asio::io_context ioContext;
+
+    // An endpoint is the destination from which we receive message. The destination we use in our TCP connection.
+    // This endpoint is specified with two things: 1. IP address, 2. Port number.
+    // Socket will get connected to this endpoint.
+    // Listen to ANY available IP version 4 IP interface (boost::asio::ip::tcp::v4()), but only on port 12345:
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), portNumber);
+
+    // boost::asio::ip::tcp::acceptor sits on endpoint and waits for connection request to accept. It doesn't send or receive data.
+    // It only manages the initial connection:
+    boost::asio::ip::tcp::acceptor acceptor(ioContext, endpoint);
+
+    // boost::asio::ip::tcp::socket is the connection pipeline through which data is exchanged. It performs I/O operations.
+    // First we create a blank disconnected socket:
+    boost::asio::ip::tcp::socket socket(ioContext);
+
+    std::cout << "Mars server online. Waiting for Moon to connect on port " << portNumber << " ..." << std::endl;
+    acceptor.accept(socket); // Here acceptor waits for connection to be established (blocks the program) and the socket to get activated...
+    // As soon as the connection is established, the acceptor polulates the connection details with socket and activates it.
+    // The acceptor has nothing more to do! Data exchange is carried out by socket.
+    std::cout << "Moon connected successfully." << std::endl;
+
+    // boost::asio::streambuf provides a memory buffer which can be resized dynamically. It makes the life easier and we have no buffer overflow.
+    boost::asio::streambuf buffer;
+
+    // Get the data from the socket and put it in buffer till you reach the given delimiter.
+    // boost::asio::read_until blocks execution till it receives the given delimiter.
+    boost::asio::read_until(socket, buffer, "\n");
+
+    std::string message;
+    {
+      std::istream stream(&buffer);
+      std::getline(stream, message); // Reads until new line
+    }
+    std::cout << "Mars received message from Moon: \"" << message << "\"" << std::endl;
+  }
+  catch (std::exception& e)
+  {
+    std::cout << "Mars exception. Error message: " << e.what() << std::endl;
+  }
+
+  return 0;
+}
+```
+`G:\SenderReceiverTest\src\src\Moon\main.cpp`:
+```c++
+#include <iostream>
+#include <boost/asio.hpp>
+
+int main()
+{
+  std::cout << "Hello World by Moon!" << std::endl;
+
+  try
+  {
+    boost::asio::io_context ioContext;
+
+    // boost::asio::ip::tcp::resolver creates a list of endpoints from given IP and port number.
+    boost::asio::ip::tcp::resolver resolver(ioContext);
+    // Get the IP and port number and return a list of matching endpoints:
+    boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> endpoints = resolver.resolve("localhost", "12345");
+
+    boost::asio::ip::tcp::socket socket(ioContext);
+    std::cout << "Attemptring to connect to Mars..." << std::endl;
+    
+    // boost::asio::connect tries every endpoint till one gets connected. This will try for a while and if no success, will throw an exception:
+    // "No connection could be made because the target machine actively refused it"
+    boost::asio::connect(socket, endpoints);
+    std::cout << "Connected to Mars successfully." << std::endl;
+
+    std::string message = "Hello to Mars from Moon\n"; // The \n is important and expected from our implementation for receiver.
+    // boost::asio::buffer: 1. Checks where the input message on memory is. 2. Checks the input message size. 3. Converts it to something that 
+    // can be sent via Boost.Asio.
+    // boost::asio::write: Puts/Writes the contents of the buffer byte-by-byte in the socket to send.
+    // boost::asio::write guarantees that execution will not move to the next line of code until your message is entirely sent 
+    // (or an unrecoverable network error occurs).
+    boost::asio::write(socket, boost::asio::buffer(message));
+    std::cout << "Sent message to Mars successfully." << std::endl;
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "Moon exception. Error message: " << e.what() << std::endl;
+  }
+
+  return 0;
+}
+```
+Now after building in Release, we see two executables in here:
+* `G:\SenderReceiverTest\build\Release\Mars.exe`
+* `G:\SenderReceiverTest\build\Release\Moon.exe`
+
+Now we open two cmd s in folder `G:\SenderReceiverTest\build\Release\`
+In the first one we start `Mars.exe` (message receiver):
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Mars.exe
+Hello World by Mars!
+Mars server online. Waiting for Moon to connect on port 12345 ...
+```
+In the second one `Moon.exe`:
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Moon.exe
+Hello World by Moon!
+Attemptring to connect to Mars...
+Connected to Mars successfully.
+Sent message to Mars successfully.
+
+G:\SenderReceiverTest\build\Release>
+```
+And now if we check the cmd of Mars again we see the added part:
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Mars.exe
+Hello World by Mars!
+Mars server online. Waiting for Moon to connect on port 12345 ...
+Moon connected successfully.
+Mars received message from Moon: "Hello to Mars from Moon"
+
+G:\SenderReceiverTest\build\Release>
+```
 
 
 
