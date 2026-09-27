@@ -91,6 +91,7 @@ For more detailed explanation on using `volatile` for canceling a thread, refer 
 The keyword `inline` has two major applications:
 1. Compilation optimization: Using `inline` for this purpose is not necessary in modern C++ anymore because the compiler itself decides whether to `inline` a function for optimization.
 2. Solving the problem of "multiple definitions".
+3. (since C++17) `static` member variable definition inside the class declaration.
 
 In C++ we can not have multiple function *definition*s for one function *declaration*. This is called "One Definition Rule" or ODR. Now imagine that we have a header file with a function in it:
 ```c++
@@ -148,6 +149,69 @@ int main(int argc, char* argv[])
     return 0;
 }
 ```
+Till C++17 we were not able to assign a value to an static member variable at declaration. Till C++17 assigning a value to static member variable had to be implemented outside the class declaration, as following (notice that we put `t4` in a separate scope and its effect on parameter `count`):
+```c++
+#include <iostream>
+#include <string>
+
+class Test
+{
+    public:
+    static int count; // static member variable declaration.
+    Test() {count++;}
+    ~Test() {count--;}
+};
+
+int Test::count = 0; // static member variable definition. Outside the class declaration
+
+int main(int argc, char* argv[])
+{
+   Test t1;
+   Test t2;
+   Test t3;
+   {
+     Test t4;
+     std::cout << "Test::count = " << Test::count << std::endl; // prints: Test::count = 4
+   }
+     std::cout << "Test::count = " << Test::count << std::endl; // prints: Test::count = 3
+
+    return 0;
+}
+```
+This prints:
+```
+Test::count = 4
+Test::count = 3
+```
+From C++17 we can assign initial value of static member variable at declaration using `ìnline static`:
+```c++
+#include <iostream>
+#include <string>
+
+class Test
+{
+    public:
+    inline static int count = 0; // Possible since C++17
+    Test() {count++;}
+    ~Test() {count--;}
+};
+
+int main(int argc, char* argv[])
+{
+   Test t1;
+   Test t2;
+   Test t3;
+   {
+     Test t4;
+     std::cout << "Test::count = " << Test::count << std::endl; // prints: Test::count = 4
+   }
+     std::cout << "Test::count = " << Test::count << std::endl; // prints: Test::count = 3
+
+    return 0;
+}
+```
+Notice that **static member variable belongs to the class, not to object**.
+
 Example for shared configuration for all objects:
 ```c++
 #include <iostream>
