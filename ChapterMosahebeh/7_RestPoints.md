@@ -88,7 +88,7 @@ Now anytime we want to cancel `ClassName::convertImages`, we just set `canceled`
 For more detailed explanation on using `volatile` for canceling a thread, refer to the book *Advanced Qt Programming* by *Mark Summerfield*, Chapter 7: *Threading with QtConcurrent*.
 
 ### Keyword `inline`
-The keyword `inline` has two major applications:
+The keyword `inline` has three major applications:
 1. Compilation optimization: Using `inline` for this purpose is not necessary in modern C++ anymore because the compiler itself decides whether to `inline` a function for optimization.
 2. Solving the problem of "multiple definitions".
 3. (since C++17) `static` member variable definition inside the class declaration.
