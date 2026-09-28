@@ -304,7 +304,6 @@ project(SenderReceiverTest)
 set(Boost_DIR "G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0")
 set(Boost_USE_STATIC_LIBS ON) # Recommended for Windows to avoid missing .dll errors
 
-
 find_package(Boost REQUIRED COMPONENTS "system")
 
 set(moon "Moon")
