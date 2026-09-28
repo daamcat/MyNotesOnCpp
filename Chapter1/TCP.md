@@ -12,13 +12,13 @@ The idea is to have two executable files, communicating with each other through 
 
 The structure of files and folders should be like the following:
 ```
-- SenderReceiverTest
--- src
+- SenderReceiverTest\
+-- src\
 ---- CMakeLists.txt
----- src
------- Moon
+---- src\
+------ Moon\
 -------- Moon.cpp
------- Mars
+------ Mars\
 -------- Mars.cpp
 ```
 Inside `Moon/Moon.cpp`:
@@ -565,16 +565,16 @@ We want to use an `struct` to send and receive the data. In order to do so, firs
 
 Adding these two files, the structure of files and folders will be like the following:
 ```
-- SenderReceiverTest
--- src
+- SenderReceiverTest\
+-- src\
 ---- CMakeLists.txt
----- src
------- Common
+---- src\
+------ Common\
 -------- ExampleStruct.cpp
 -------- ExampleStruct.h
------- Moon
+------ Moon\
 -------- Moon.cpp
------- Mars
+------ Mars\
 -------- Mars.cpp
 ```
 The file `ExampleStruct.cpp` is left empty. We need `ExampleStruct.h`:
