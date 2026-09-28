@@ -13,6 +13,7 @@ The idea is to have two executable files, communicating with each other through 
 The structure of files and folders should be like the following:
 ```
 - SenderReceiverTest
+--src
 ---- CMakeLists.txt
 ---- src
 ------ Moon
@@ -565,6 +566,7 @@ We want to use an `struct` to send and receive the data. In order to do so, firs
 Adding these two files, the structure of files and folders will be like the following:
 ```
 - SenderReceiverTest
+--src
 ---- CMakeLists.txt
 ---- src
 ------ Common
