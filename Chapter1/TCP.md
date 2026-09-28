@@ -403,7 +403,7 @@ Now we can develop our code using VS Solution in: `G:\SenderReceiverTest\build\S
 
 #### Linux TO BE COMPLETED
 
-### First data exchange
+### First data exchange: sending/receiving simple string
 Here we have an initial working implementation in which `Moon` sends a Hello World message to `Mars`. The message has to end with a `\n` in this example.
 
 `G:\SenderReceiverTest\src\src\Mars\Mars.cpp`:
@@ -558,5 +558,306 @@ Mars received message from Moon: "Hello to Mars from Moon"
 G:\SenderReceiverTest\build\Release>
 ```
 
+### Sending/Receiving `struct` object
+We want to use an `struct` to send and receive the data. In order to do so, first we need to declare this `struct` in a *shared library* and to share it with both executables `Moon.exe` and `Mars.exe`. We add the following two files to our solution:
+* `G:\SenderReceiverTest\src\src\Common\ExampleStruct.cpp`
+* `G:\SenderReceiverTest\src\src\Common\ExampleStruct.h`
+
+The file `ExampleStruct.cpp` is left empty. We need `ExampleStruct.h`:
+```c++
+#pragma once // To make sure that the header file is included only once during compilation.
+
+
+// Includes...
+#include <iostream>
+
+/*
+An struct is going to be used for TCP data transfer between executables.
+The object of this struct must have a certain size. That is why we can not have objects of 
+dynamic containers like std::string or std::vector. "Dynamic container"s are designed to 
+grow and shrink in size dynamically. And this prevents the size of struct object to be fixed.
+
+More on char str[n], like char statusMessage[128]:
+Converting char statusMessage[128] to std::string is straightforward, because std::string has a constructor which
+accepts an array of chars. So we simply can say:
+std::string str = statusMessage;
+
+Even better is:
+std::string str(statusMessage, sizeof(statusMessage));
+
+Converting std::string str to char statusMessage[128]:
+First we clear the char buffer:
+std::fill_n(statusMessage, sizeof(statusMessage), '\0'); // Fills specific number of elements with a chosen value.
+
+Then we calculate how many characters we can safely copy:
+size_t copySize = std::min(str.size() , sizeof(statusMessage) - 1);
+
+Do the copy:
+std::copy(str.begin(), str.begin() + copySize , statusMessage);
+
+
+*/
+
+#pragma pack(push,1) // Prevents compiler alignment padding bytes
+
+struct ExampleStruct
+{
+  int64_t messageId;
+  double coordinates[2]; // [0] = Latitude, [1] = Longitude
+  char statusMessage[128];
+};
+#pragma pack(pop)
+```
+And we update `CMakeLists.txt` to:
+
+```cmake
+
+cmake_minimum_required(VERSION 3.5) # In order to get installed cmake version in Windows, in cmd type: cmake --version
+
+project(SenderReceiverTest)
+
+# 1. Point CMake directly to the generated config files inside your built Boost folder
+set(Boost_DIR "G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0")
+set(Boost_USE_STATIC_LIBS ON) # Recommended for Windows to avoid missing .dll errors
+
+find_package(Boost REQUIRED COMPONENTS "system")
+
+# Define the compiled shared library files
+# Since this CMakeLists.txt is inside 'src', paths are relative to 'src/'
+set(SHARED_LIB_FILES
+    src/Common/ExampleStruct.h
+    src/Common/ExampleStruct.cpp
+   )
+
+# Organize files into virtual folder "SharedLibrary" inside the Visual Studio project view:
+source_group("SharedLibrary" FILES ${SHARED_LIB_FILES})
+add_library(SharedLibrary STATIC ${SHARED_LIB_FILES})
+# Tell anyone linking against SharedLibrary where to find its headers.
+# PUBLIC ensures that Moon and Mars inherit this include directory automatically.
+# target_include_directories tells the compiler where to look on hard drive to find the header .h files 
+# when it encounters an #include statement.
+target_include_directories(SharedLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(moon "Moon")
+set(mars "Mars")
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
+
+target_include_directories(${moon} PRIVATE ${BOOST_INCLUDE_DIRS})
+target_include_directories(${mars} PRIVATE ${BOOST_INCLUDE_DIRS})
+
+target_link_libraries(${moon} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+target_link_libraries(${mars} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+
+install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
+# When we generate buildsystem with "cmake -S src -B build", CMAKE_BINARY_DIR is set to "build".
+```
+Then we again *generate build files* and *build* the project. Now if we open the file `G:\SenderReceiverTest\build\SenderReceiverTest.sln`, we can see "SharedLibrary" and inside it the files for `ExampleStruct`.
+
+Now we update `Mars.cpp`:
+```c++
+#include <iostream>
+#include <string>
+#include <istream>
+
+#include <boost/asio.hpp>
+
+#include "src/Common/ExampleStruct.h"
+
+int main()
+{
+  std::cout << "Hello World by Mars!" << std::endl;
+
+  /*
+  Synchronous TCP server:
+  Refs: 
+  https://www.boost.org/doc/libs/1_37_0/doc/html/boost_asio/overview/core/basics.html
+  https://www.boost.org/doc/libs/1_92_0/doc/html/boost_asio/tutorial/tutdaytime2.html
+  https://theboostcpplibraries.com/boost.asio-network-programming
+  */
+
+  try
+  {
+    int32_t portNumber = 12345;
+
+    // boost::asio::io_context is the modern replacement for boost::asio::io_service. It links our executable to I/O services of OS.
+    boost::asio::io_context ioContext;
+
+    // An endpoint is the destination from which we receive message. The destination we use in our TCP connection.
+    // This endpoint is specified with two things: 1. IP address, 2. Port number.
+    // Socket will get connected to this endpoint.
+    // Listen to ANY available IP version 4 IP interface (boost::asio::ip::tcp::v4()), but only on port 12345:
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), portNumber);
+
+    // boost::asio::ip::tcp::acceptor sits on endpoint and waits for connection request to accept. It doesn't send or receive data.
+    // It only manages the initial connection:
+    boost::asio::ip::tcp::acceptor acceptor(ioContext, endpoint);
+
+    // boost::asio::ip::tcp::socket is the connection pipeline through which data is exchanged. It performs I/O operations.
+    // First we create a blank disconnected socket:
+    boost::asio::ip::tcp::socket socket(ioContext);
+
+    std::cout << "Mars server online. Waiting for Moon to connect on port " << portNumber << " ..." << std::endl;
+    acceptor.accept(socket); 
+    // Here acceptor waits for connection to be established (blocks the program) and the socket to get activated...
+    // As soon as the connection is established, the acceptor polulates the connection details with socket and activates it.
+    // The acceptor has nothing more to do! Data exchange is carried out by socket.
+    std::cout << "Moon connected successfully." << std::endl;
+
+    // boost::asio::streambuf provides a memory buffer which can be resized dynamically. It makes the life easier and we have no buffer overflow.
+    boost::asio::streambuf buffer;
+    // Buffer is a memory allocated on RAM. Received data lands in buffer.
+    // For reading from buffer, socket itself has the function boost::asio::ip::tcp::socket::read_some(). But this function is a low-level function
+    // and many things have to be considered in order to be able to use it properly.
+    // boost::asio::read is a high-level function which internally uses boost::asio::ip::tcp::socket::read_some(), but takes care of completion condition
+    // to make sure data is taken from buffer correctly.
+    // boost::asio::transfer_exactly is a "completion condition". boost::asio::read needs to know till when it should read the data and put in buffer.
+    // For this purpose, boost::asio::read needs to have a "completion condition" otherwise it explodes the buffer!
+    // boost::asio::read will block the code till the completion condition is fullfilled.
+    boost::asio::read(socket, buffer, boost::asio::transfer_exactly(sizeof(ExampleStruct)));
+
+    /*
+    [Mars calls read()] ──► [Check bytes read]
+                                 │
+                ┌────────────────┴───────────────────────────────┐
+                ▼ (Less than sizeof(ExampleStruct) bytes)        ▼ (Exactly sizeof(ExampleStruct) bytes)
+       [Block & Wait for OS]                             [Unblock & return control]
+                │                                                │
+       [Receive TCP Packet fragment]                             ▼
+                │                                        [Execute next line of C++]
+                └──────► [Append to buffer]
+    */
+
+    // Reading buffer in struct object:
+    ExampleStruct incomingStruct;
+    {
+      std::istream istream(&buffer);
+      istream.read(reinterpret_cast<char*> (&incomingStruct), sizeof(ExampleStruct));
+    }
+    std::cout << "Mars received message from Moon in form of \"ExampleStruct\" object:" << std::endl;
+    std::cout << "ExampleStruct.messageId:"     << incomingStruct.messageId             <<  std::endl;
+    std::cout << "ExampleStruct.coordinates[0]:"   << incomingStruct.coordinates[0]     <<  std::endl;
+    std::cout << "ExampleStruct.coordinates[1]:"   << incomingStruct.coordinates[1]     <<  std::endl;
+    std::cout << "ExampleStruct.statusMessage:" << incomingStruct.statusMessage         <<  std::endl;
+  }
+  catch (std::exception& e)
+  {
+    std::cout << "Mars exception. Error message: " << e.what() << std::endl;
+  }
+
+  return 0;
+}
+```
+And the file `Moon.cpp`:
+```c++
+#include <iostream>
+#include <istream>
+
+#include <boost/asio.hpp>
+
+#include "src/Common/ExampleStruct.h"
+
+/*
+Refs:
+https://www.boost.org/doc/libs/1_92_0/doc/html/boost_asio/tutorial/tutdaytime1.html
+*/
+
+int main()
+{
+  std::cout << "Hello World by Moon!" << std::endl;
+
+  try
+  {
+    boost::asio::io_context ioContext;
+
+    // boost::asio::ip::tcp::resolver creates a list of endpoints from given IP and port number.
+    boost::asio::ip::tcp::resolver resolver(ioContext);
+    // Get the IP and port number and return a list of matching endpoints:
+    boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> endpoints = resolver.resolve("localhost", "12345");
+
+    boost::asio::ip::tcp::socket socket(ioContext);
+    std::cout << "Attemptring to connect to Mars..." << std::endl;
+    
+    // boost::asio::connect tries every endpoint till one gets connected. This will try for a while and if no success, will throw an exception:
+    // "No connection could be made because the target machine actively refused it"
+    // The list of endpoints obtained may contain both IPv4 and IPv6 endpoints, so we need to try each of them until we find one that works. 
+    // Having list of endpoints keeps the client program independent of a specific IP version.
+    boost::asio::connect(socket, endpoints);
+    std::cout << "Connected to Mars successfully." << std::endl;
+
+    ExampleStruct exampleStruct;
+    exampleStruct.messageId = 77;
+    exampleStruct.coordinates[0] = -15.15;
+    exampleStruct.coordinates[1] = +221.221;
+    //Converting std::string str to char statusMessage[128]:
+    //First we clear the char buffer :
+    std::string str = "This is a sample text message. Received data should be: Id 77, co[0] -15.15, co[1] +221.221.";
+    std::fill_n(exampleStruct.statusMessage, sizeof(exampleStruct.statusMessage), '\0'); // Fills specific number of elements with a chosen value.
+    //Then we calculate how many characters we can safely copy :
+    size_t copySize = std::min(str.size(), sizeof(exampleStruct.statusMessage) - 1);
+    // Do the copy:
+    std::copy(str.begin(), str.begin() + copySize, exampleStruct.statusMessage);
+
+    std::cout << "Sending an object of type \"ExampleStruct\" to Mars with size: " << sizeof(ExampleStruct) << " bytes." << std::endl;
+
+    // boost::asio::buffer: 1. Checks where the input message on memory is. 2. Checks the input message size. 3. Converts it to something that 
+    // can be sent via Boost.Asio.
+    // boost::asio::write: Puts/Writes the contents of the buffer byte-by-byte in the socket to send.
+    // boost::asio::write guarantees that execution will not move to the next line of code until your message is entirely sent 
+    // (or an unrecoverable network error occurs).
+    boost::asio::write(socket, boost::asio::buffer(&exampleStruct, sizeof(ExampleStruct)));
+    std::cout << "Sent object of type \"ExampleStruct\" to Mars successfully." << std::endl;
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "Moon exception. Error message: " << e.what() << std::endl;
+  }
+
+  return 0;
+}
+```
+And we build the solution. In order to test, we open two command windows from the folder `G:\SenderReceiverTest\build\Release`. In the first one we start `Mars.exe`:
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Mars.exe
+Hello World by Mars!
+Mars server online. Waiting for Moon to connect on port 12345 ...
+```
+And in the other command window we start `Moon.exe`:
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Moon.exe
+Hello World by Moon!
+Attemptring to connect to Mars...
+Connected to Mars successfully.
+Sending an object of type "ExampleStruct" to Mars with size: 152 bytes.
+Sent object of type "ExampleStruct" to Mars successfully.
+```
+As soon as `Moon.exe` starts, we see that the command window of `Mars.exe` gets updated to:
+```
+Microsoft Windows [Version 10.0.26200.9457]
+(c) Microsoft Corporation. All rights reserved.
+
+G:\SenderReceiverTest\build\Release>Mars.exe
+Hello World by Mars!
+Mars server online. Waiting for Moon to connect on port 12345 ...
+Moon connected successfully.
+Mars received message from Moon in form of "ExampleStruct" object:
+ExampleStruct.messageId:77
+ExampleStruct.coordinates[0]:-15.15
+ExampleStruct.coordinates[1]:221.221
+ExampleStruct.statusMessage:This is a sample text message. Received data should be: Id 77, co[0] -15.15, co[1] +221.221.
+
+G:\SenderReceiverTest\build\Release>
+```
+which is as we expect.
 
 
