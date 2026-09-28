@@ -15,11 +15,11 @@ The structure of files and folders should be like the following:
 ---- CMakeLists.txt
 ---- src
 ------ Moon
--------- main.cpp
+-------- Moon.cpp
 ------ Mars
--------- main.cpp
+-------- Mars.cpp
 ```
-Inside `Moon/main.cpp`:
+Inside `Moon/Moon.cpp`:
 ```c++
 #include <iostream>
 int main()
@@ -28,7 +28,7 @@ int main()
   return 0;
 }
 ```
-Inside `Mars/main.cpp`:
+Inside `Mars/Mars.cpp`:
 ```c++
 #include <iostream>
 int main()
@@ -45,16 +45,16 @@ cmake_minimum_required(VERSION 3.6) # In order to get installed cmake version in
 
 set(moon "Moon")
 set(mars "Mars")
-add_executable(${moon} src/Moon/main.cpp)
-add_executable(${mars} src/Mars/main.cpp)
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
 install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
 # When we generate buildsystem with "cmake -S src -B build", CMAKE_BINARY_DIR is set to "build".
 ```
 #### Windows 11
 Generating buildsystem (generating build files) and building:
-In our example, the two `main.cpp` files are located in:
-* `G:\SenderReceiverTest\src\src\Moon\main.cpp`
-* `G:\SenderReceiverTest\src\src\Mars\main.cpp`
+In our example, the two `.cpp` files are located in:
+* `G:\SenderReceiverTest\src\src\Moon\Moon.cpp`
+* `G:\SenderReceiverTest\src\src\Mars\Mars.cpp`
 
 We open `cmd` command prompt window in `G:\SenderReceiverTest` and insert:
 ```
@@ -99,11 +99,11 @@ MSBuild version 17.14.10+8b8e13593 for .NET Framework
 
   1>Checking Build System
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
-  main.cpp
+  Moon.cpp
   Moon.vcxproj -> G:\SenderReceiverTest\build\Release\Moon.exe
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
-  main.cpp
-  Naghi.vcxproj -> G:\SenderReceiverTest\build\Release\Naghi.exe
+  Mars.cpp
+  Mars.vcxproj -> G:\SenderReceiverTest\build\Release\Mars.exe
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
 ```
 Now check below two files:
@@ -308,8 +308,8 @@ find_package(Boost REQUIRED COMPONENTS "system")
 
 set(moon "Moon")
 set(mars "Mars")
-add_executable(${moon} src/Moon/main.cpp)
-add_executable(${mars} src/Mars/main.cpp)
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
 
 target_include_directories(${moon} PRIVATE ${BOOST_INCLUDE_DIRS})
 target_include_directories(${mars} PRIVATE ${BOOST_INCLUDE_DIRS})
@@ -389,10 +389,10 @@ MSBuild version 17.14.40+3e7442088 for .NET Framework
 
   1>Checking Build System
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
-  main.cpp
+  Mars.cpp
   Mars.vcxproj -> G:\SenderReceiverTest\build\Release\Mars.exe
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
-  main.cpp
+  Moon.cpp
   Moon.vcxproj -> G:\SenderReceiverTest\build\Release\Moon.exe
   Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
 
@@ -405,7 +405,7 @@ Now we can develop our code using VS Solution in: `G:\SenderReceiverTest\build\S
 ### First data exchange
 Here we have an initial working implementation in which `Moon` sends a Hello World message to `Mars`. The message has to end with a `\n` in this example.
 
-`G:\SenderReceiverTest\src\src\Mars\main.cpp`:
+`G:\SenderReceiverTest\src\src\Mars\Mars.cpp`:
 ```c++
 #include <iostream>
 #include <string>
@@ -473,7 +473,7 @@ int main()
   return 0;
 }
 ```
-`G:\SenderReceiverTest\src\src\Moon\main.cpp`:
+`G:\SenderReceiverTest\src\src\Moon\Moon.cpp`:
 ```c++
 #include <iostream>
 #include <boost/asio.hpp>
