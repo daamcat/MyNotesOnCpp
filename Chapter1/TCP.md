@@ -562,6 +562,19 @@ We want to use an `struct` to send and receive the data. In order to do so, firs
 * `G:\SenderReceiverTest\src\src\Common\ExampleStruct.cpp`
 * `G:\SenderReceiverTest\src\src\Common\ExampleStruct.h`
 
+Adding these two files, the structure of files and folders will be like the following:
+```
+- SenderReceiverTest
+---- CMakeLists.txt
+---- src
+------ Common
+-------- ExampleStruct.cpp
+-------- ExampleStruct.h
+------ Moon
+-------- Moon.cpp
+------ Mars
+-------- Mars.cpp
+```
 The file `ExampleStruct.cpp` is left empty. We need `ExampleStruct.h`:
 ```c++
 #pragma once // To make sure that the header file is included only once during compilation.
