@@ -1,7 +1,9 @@
 ## Multithreading
 
 References:
+
 https://en.cppreference.com/w/cpp/thread/thread/join
+
 https://stackoverflow.com/questions/200469/what-is-the-difference-between-a-process-and-a-thread
 
 *Process* is an executing instance of a *program*. On each processor at a time, only one process can run. Each *process* is started with a single *thread*, called *primary thread*. 
