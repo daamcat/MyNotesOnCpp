@@ -1118,6 +1118,151 @@ Reply was sent to Moon successfully.
 
 G:\SenderReceiverTest\build\Release>
 ```
+### Adding unittest
+First we add a new executable for testing. We add the following file: `G:\SenderReceiverTest\src\tests\test1\Test1.cpp`
 
+With the content:
+```c++
+#include <iostream>
+
+int main(int argc, char* argv[])
+{
+  std::cout << "Hello Test 1." << std::endl;
+
+  return 0;
+}
+```
+We extend the `CMakeLists.txt` (the last three lines):
+```cmake
+
+cmake_minimum_required(VERSION 3.5) # In order to get installed cmake version in Windows, in cmd type: cmake --version
+
+project(SenderReceiverTest)
+
+# 1. Point CMake directly to the generated config files inside your built Boost folder
+set(Boost_DIR "G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0")
+set(Boost_USE_STATIC_LIBS ON) # Recommended for Windows to avoid missing .dll errors
+
+
+find_package(Boost REQUIRED COMPONENTS "system")
+
+
+# Define the compiled shared library files
+# Since this CMakeLists.txt is inside 'src', paths are relative to 'src/'
+set(SHARED_LIB_FILES
+    src/Common/ExampleStruct.h
+    src/Common/ExampleStruct.cpp
+   )
+
+# Organize files into virtual folder "SharedLibrary" inside the Visual Studio project view:
+source_group("SharedLibrary" FILES ${SHARED_LIB_FILES})
+add_library(SharedLibrary STATIC ${SHARED_LIB_FILES})
+# Tell anyone linking against SharedLibrary where to find its headers.
+# PUBLIC ensures that Moon and Mars inherit this include directory automatically.
+# target_include_directories tells the compiler where to look on hard drive to find the header .h files 
+# when it encounters an #include statement.
+target_include_directories(SharedLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(moon "Moon")
+set(mars "Mars")
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
+
+target_include_directories(${moon} PRIVATE ${BOOST_INCLUDE_DIRS})
+target_include_directories(${mars} PRIVATE ${BOOST_INCLUDE_DIRS})
+
+target_link_libraries(${moon} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+target_link_libraries(${mars} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+
+install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
+# When we generate buildsystem with "cmake -S src -B build", CMAKE_BINARY_DIR is set to "build".
+
+# For testing:
+add_executable(Test1 tests/test1/Test1.cpp)
+install(TARGETS Test1 DESTINATION "${CMAKE_BINARY_DIR}/install")
+```
+Then we *generate the build files*:
+```
+G:\SenderReceiverTest>cmake -S src -B build
+-- Building for: Visual Studio 17 2022
+CMake Deprecation Warning at CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- The C compiler identification is MSVC 19.44.35222.0
+-- The CXX compiler identification is MSVC 19.44.35222.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Warning (dev) at CMakeLists.txt:11 (find_package):
+  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+  --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+  set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found Boost: G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0/BoostConfig.cmake (found version "1.92.0") found components: system
+-- Configuring done (2.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: G:/SenderReceiverTest/build
+G:\SenderReceiverTest>
+```
+And then we *build* the solution:
+```
+G:\SenderReceiverTest>cmake --build build --config Release --target install
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+
+  1>Checking Build System
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  ExampleStruct.cpp
+  SharedLibrary.vcxproj -> G:\SenderReceiverTest\build\Release\SharedLibrary.lib
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Mars.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  Mars.vcxproj -> G:\SenderReceiverTest\build\Release\Mars.exe
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Moon.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  Moon.vcxproj -> G:\SenderReceiverTest\build\Release\Moon.exe
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Test1.cpp
+  Test1.vcxproj -> G:\SenderReceiverTest\build\Release\Test1.exe
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  1>
+  -- Install configuration: "Release"
+  -- Installing: G:/SenderReceiverTest/build/install/Moon.exe
+  -- Installing: G:/SenderReceiverTest/build/install/Mars.exe
+  -- Installing: G:/SenderReceiverTest/build/install/Test1.exe
+
+G:\SenderReceiverTest>
+```
+Then we test our tester *Hello World*:
+```
+G:\SenderReceiverTest\build\Release>Test1.exe
+Hello Test 1.
+```
 
 
