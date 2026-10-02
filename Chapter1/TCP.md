@@ -1185,7 +1185,7 @@ install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
 add_executable(Test1 tests/test1/Test1.cpp)
 install(TARGETS Test1 DESTINATION "${CMAKE_BINARY_DIR}/install")
 ```
-Then we *generate the build files*:
+Now we *generate the build files*:
 ```
 G:\SenderReceiverTest>cmake -S src -B build
 -- Building for: Visual Studio 17 2022
@@ -1264,5 +1264,229 @@ Then we test our tester *Hello World*:
 G:\SenderReceiverTest\build\Release>Test1.exe
 Hello Test 1.
 ```
+Now we want to integrate *GoogleTest* library in our project. We change `CMakeLists.txt` by adding some lines to it:
+```cmake
+cmake_minimum_required(VERSION 3.5) # In order to get installed cmake version in Windows, in cmd type: cmake --version
+
+project(SenderReceiverTest)
+
+# For googleTest - Start
+enable_testing()
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+  )
+
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Turn off GoogleTest's global system installation scripts
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+# Setting INSTALL_GTEST OFF explicitly tells the engine to compile GoogleTest locally inside your build/ directory 
+# for Test1.exe to link against, but ignores copying any GoogleTest files out when building the install target sequence.
+
+FetchContent_MakeAvailable(googletest)
+# For googleTest - End
+
+# 1. Point CMake directly to the generated config files inside your built Boost folder
+set(Boost_DIR "G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0")
+set(Boost_USE_STATIC_LIBS ON) # Recommended for Windows to avoid missing .dll errors
 
 
+find_package(Boost REQUIRED COMPONENTS "system")
+
+
+# Define the compiled shared library files
+# Since this CMakeLists.txt is inside 'src', paths are relative to 'src/'
+set(SHARED_LIB_FILES
+    src/Common/ExampleStruct.h
+    src/Common/ExampleStruct.cpp
+   )
+
+# Organize files into virtual folder "SharedLibrary" inside the Visual Studio project view:
+source_group("SharedLibrary" FILES ${SHARED_LIB_FILES})
+add_library(SharedLibrary STATIC ${SHARED_LIB_FILES})
+# Tell anyone linking against SharedLibrary where to find its headers.
+# PUBLIC ensures that Moon and Mars inherit this include directory automatically.
+# target_include_directories tells the compiler where to look on hard drive to find the header .h files 
+# when it encounters an #include statement.
+target_include_directories(SharedLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(moon "Moon")
+set(mars "Mars")
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
+
+target_include_directories(${moon} PRIVATE ${BOOST_INCLUDE_DIRS})
+target_include_directories(${mars} PRIVATE ${BOOST_INCLUDE_DIRS})
+
+target_link_libraries(${moon} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+target_link_libraries(${mars} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+
+install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
+# When we generate buildsystem with "cmake -S src -B build", CMAKE_BINARY_DIR is set to "build".
+
+# For testing:
+add_executable(Test1 tests/test1/Test1.cpp)
+target_link_libraries(Test1 PRIVATE gtest gtest_main)
+include(GoogleTest)
+gtest_discover_tests(Test1)
+install(TARGETS Test1 DESTINATION "${CMAKE_BINARY_DIR}/install")
+```
+We change the file `Test1.cpp` as following:
+```c++
+#include <iostream>
+#include <gtest/gtest.h>
+
+/*
+Ref: https://google.github.io/googletest/primer.html
+
+Use the TEST() macro to define and name a test function.
+The first argument is the name of the test suite, and the second argument is the test’s name within the test suite. 
+A test’s full name consists of its containing test suite and its individual name.
+Tests from different test suites can have the same individual name.
+GoogleTest groups the test results by test suites.
+*/
+TEST(NetworkTestSuite, NetworkTestName)
+{
+  EXPECT_EQ(42, 41);
+}
+```
+Now we *generate build files*:
+```
+G:\SenderReceiverTest>cmake -S src -B build
+-- Building for: Visual Studio 17 2022
+CMake Deprecation Warning at CMakeLists.txt:2 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- The C compiler identification is MSVC 19.44.35222.0
+-- The CXX compiler identification is MSVC 19.44.35222.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.31/Modules/FetchContent.cmake:1373 (message):
+  The DOWNLOAD_EXTRACT_TIMESTAMP option was not given and policy CMP0135 is
+  not set.  The policy's OLD behavior will be used.  When using a URL
+  download, the timestamps of extracted files should preferably be that of
+  the time of extraction, otherwise code that depends on the extracted
+  contents might not be rebuilt if the URL changes.  The OLD behavior
+  preserves the timestamps from the archive instead, but this is usually not
+  what you want.  Update your project to the NEW behavior or specify the
+  DOWNLOAD_EXTRACT_TIMESTAMP option with a value of true to avoid this
+  robustness issue.
+Call Stack (most recent call first):
+  CMakeLists.txt:9 (FetchContent_Declare)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - not found
+-- Found Threads: TRUE
+CMake Warning (dev) at CMakeLists.txt:30 (find_package):
+  Policy CMP0167 is not set: The FindBoost module is removed.  Run "cmake
+  --help-policy CMP0167" for policy details.  Use the cmake_policy command to
+  set the policy and suppress this warning.
+
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found Boost: G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0/BoostConfig.cmake (found version "1.92.0") found components: system
+-- Configuring done (5.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: G:/SenderReceiverTest/build
+```
+And then we  *build the solution*:
+```
+G:\SenderReceiverTest>cmake --build build --config Release --target install
+MSBuild version 17.14.40+3e7442088 for .NET Framework
+
+  1>Checking Build System
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  ExampleStruct.cpp
+  SharedLibrary.vcxproj -> G:\SenderReceiverTest\build\Release\SharedLibrary.lib
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Mars.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  Mars.vcxproj -> G:\SenderReceiverTest\build\Release\Mars.exe
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Moon.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+  Moon.vcxproj -> G:\SenderReceiverTest\build\Release\Moon.exe
+  Building Custom Rule G:/SenderReceiverTest/build/_deps/googletest-src/googletest/CMakeLists.txt
+  gtest-all.cc
+  gtest.vcxproj -> G:\SenderReceiverTest\build\lib\Release\gtest.lib
+  Building Custom Rule G:/SenderReceiverTest/build/_deps/googletest-src/googletest/CMakeLists.txt
+  gtest_main.cc
+  gtest_main.vcxproj -> G:\SenderReceiverTest\build\lib\Release\gtest_main.lib
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  Test1.cpp
+  Test1.vcxproj -> G:\SenderReceiverTest\build\Release\Test1.exe
+  Building Custom Rule G:/SenderReceiverTest/build/_deps/googletest-src/googlemock/CMakeLists.txt
+  gtest-all.cc
+  gmock-all.cc
+  Generating Code...
+  gmock.vcxproj -> G:\SenderReceiverTest\build\lib\Release\gmock.lib
+  Building Custom Rule G:/SenderReceiverTest/build/_deps/googletest-src/googlemock/CMakeLists.txt
+  gtest-all.cc
+  gmock-all.cc
+  gmock_main.cc
+  Generating Code...
+  gmock_main.vcxproj -> G:\SenderReceiverTest\build\lib\Release\gmock_main.lib
+  Building Custom Rule G:/SenderReceiverTest/src/CMakeLists.txt
+  1>
+  -- Install configuration: "Release"
+  -- Installing: G:/SenderReceiverTest/build/install/Moon.exe
+  -- Installing: G:/SenderReceiverTest/build/install/Mars.exe
+  -- Installing: G:/SenderReceiverTest/build/install/Test1.exe
+
+G:\SenderReceiverTest>
+```
+Now we are able to execute the test:
+```
+G:\SenderReceiverTest>cd build
+
+G:\SenderReceiverTest\build>ctest
+Test project G:/SenderReceiverTest/build
+    Start 1: NetworkTestSuite.NetworkTestName
+1/1 Test #1: NetworkTestSuite.NetworkTestName ...***Failed    0.01 sec
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.01 sec
+
+The following tests FAILED:
+          1 - NetworkTestSuite.NetworkTestName (Failed)
+Errors while running CTest
+Output from these tests are in: G:/SenderReceiverTest/build/Testing/Temporary/LastTest.log
+Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
+
+G:\SenderReceiverTest\build>
+```
+We can open our solution `G:\SenderReceiverTest\build\SenderReceiverTest.sln` with VS and modify `Test1.cpp`. Then if we `ALL_BUILD`, or just build `Test1` and then `RUN_TESTS` (Look at the solution explorer in VS!), we see the result of the test in VS. From here on, we will develop a unittest for our network connection.
