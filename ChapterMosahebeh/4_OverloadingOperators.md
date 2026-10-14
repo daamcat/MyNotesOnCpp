@@ -88,7 +88,7 @@ member operator += overload is called.
 d+=c; d.getVal() : 28
 ```
 * The format of function member operator overload declaration is like `<1> operator<2>(const <3>& other);`, in which:
-  - <1>: what is the return type of operator? For example, the return of `*` or `+` in above example is class type `Dog`. But the return type of operator `==` is bool. The return type of `+=` is `Dog&` and it must be `return *this;`, because `+=` acts on the object itself, therefore the reference to object itself must be returned.
+  - <1>: return type. For example, the return of `*` or `+` in above example is class type `Dog`. But the return type of operator `==` is bool. The return type of `+=` is `Dog&` and it must be `return *this;`, because `+=` acts on the object itself, therefore the reference to object itself must be returned.
   - <2>: operator sign
   - <3>: Class type of the other element, that is engaged via operation.
 * `operator`s can be overloaded as *member* or *non-member* functions. *member* implemented inside the class, using `this`, *non-member* function outside the class.
