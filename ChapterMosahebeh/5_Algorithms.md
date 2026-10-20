@@ -47,7 +47,7 @@ till the target node is found.
 ### Bitmask flags
 *Bitmasking* is a technique in which we use an integer to store multiple boolean `true`/`false` flags. A value in decimal numeral system can be represented in binary numeral system. An integer can be represented by a set of booleans. For example: (78)<sub>10</sub> = (01001110)<sub>2</sub>
 
-In this technique, each flag occupies a certain bit in integer. This means flags values are defined using "power of two":
+In this technique, each flag occupies a certain bit in integer. This means flags values are defined using "2 to the power of X":
 
 * `00000001` (Binary) = 1 (Decimal) → Bit 0
 * `00000010` (Binary) = 2 (Decimal) → Bit 1
@@ -76,7 +76,7 @@ int main()
   std::cout<< "c = " << c << ". Binary is: "<< std::bitset<16>(c) << std::endl;
   std::cout<< "d = " << d << ". Binary is: "<< std::bitset<16>(d) << std::endl;
 
-  // Below we take a 1 and shift it some bits (zero to 3 bits) to left. Notice the power of two:
+  // Below we take a 1 and shift it some bits (zero to 3 bits) to left. Notice the format 2 to the power of X:
   std::cout<< "1 << 0 = " << (1 << 0) << ". Binary is: "<< std::bitset<8>(1 << 0) << std::endl;
   std::cout<< "1 << 1 = " << (1 << 1) << ". Binary is: "<< std::bitset<8>(1 << 1) << std::endl;
   std::cout<< "1 << 2 = " << (1 << 2) << ". Binary is: "<< std::bitset<8>(1 << 2) << std::endl;
@@ -105,11 +105,11 @@ We group the boolean flags in an `enum` (notice that using `enum class` will nee
 enum Car : uint8_t
 {
   none   = 0, // We set this normally to the case that no other enumerator is a match.
-  opel   = 1 << 0, // 1 to the power of 0
-  bmw    = 1 << 1, // 1 to the power of 1
-  toyota = 1 << 2, // 1 to the power of 2
-  mazda  = 1 << 3, // 1 to the power of 3
-  ford   = 1 << 4  // 1 to the power of 4
+  opel   = 1 << 0, // 2 to the power of 0
+  bmw    = 1 << 1, // 2 to the power of 1
+  toyota = 1 << 2, // 2 to the power of 2 (Take the binary number 1 and shift it 2 positions towards left: 0100, which is binary representation of 4)
+  mazda  = 1 << 3, // 2 to the power of 3
+  ford   = 1 << 4  // 2 to the power of 4
 };
 ```
 #### Manipulating bitmasks
@@ -127,11 +127,11 @@ Example:
 enum Car : uint8_t
 {
   none   = 0, // We set this normally to the case that no other enumerator is a match.
-  opel   = 1 << 0, // 1 to the power of 0
-  bmw    = 1 << 1, // 1 to the power of 1
-  toyota = 1 << 2, // 1 to the power of 2
-  mazda  = 1 << 3, // 1 to the power of 3
-  ford   = 1 << 4  // 1 to the power of 4
+  opel   = 1 << 0, // 2 to the power of 0
+  bmw    = 1 << 1, // 2 to the power of 1
+  toyota = 1 << 2, // 2 to the power of 2
+  mazda  = 1 << 3, // 2 to the power of 3
+  ford   = 1 << 4  // 2 to the power of 4
 };
 
 int main()
@@ -185,7 +185,7 @@ int main()
 }
 ```
 
-Prints (notice how the value of each enumerator is a power of two, instead of the continuous set {0,1,2,3,...}):
+Prints (notice how the value of each enumerator is a 2 to the power of X, instead of the continuous set {0,1,2,3,...}):
 ```
 The value of opel   = 1, binary is: 00000001
 The value of bmw    = 2, binary is: 00000010
