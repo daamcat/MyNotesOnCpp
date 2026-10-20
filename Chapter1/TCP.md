@@ -1490,3 +1490,572 @@ Use "--rerun-failed --output-on-failure" to re-run the failed cases verbosely.
 G:\SenderReceiverTest\build>
 ```
 We can open our solution `G:\SenderReceiverTest\build\SenderReceiverTest.sln` with VS and modify `Test1.cpp`. Then if we `ALL_BUILD`, or just build `Test1` and then `RUN_TESTS` (Look at the solution explorer in VS!), we see the result of the test in VS. From here on, we will develop a unittest for our network connection.
+
+### Restructuring project for unittesting
+Sofar we just wanted to demonstrate how message exchange works using TCP protocol. In order for the code to be testable, we need to refactor it. The major goal is to move all the logic to dedicated classes.
+
+Moreover, we make some changes in terminology: Instead of using the terms *sender* and *receiver*, we use the terms *server* and *client*. This is more accurate with respect to our TCP protocol. Both `Mars` and `Moon` can send and receive messages. But one of them, `Mars`, must be *server*, and the other one, `Moon`, must be *client*. *Server* gets initialized and waits for the *client* to get connected. After they are connected, they can exchange TCP messages.
+
+The refactoring will add some classes to our project, making the structure of files as the following:
+```
+- SenderReceiverTest\
+-- src\
+---- CMakeLists.txt
+---- src\
+------ Common\
+-------- ExampleStruct.h
+-------- ExampleStruct.cpp
+-------- TcpBase.h
+-------- TcpBase.cpp
+-------- TcpClient.h
+-------- TcpClient.cpp
+-------- TcpServer.h
+-------- TcpServer.cpp
+------ Moon\
+-------- Moon.cpp
+------ Mars\
+-------- Mars.cpp
+-- tests\
+------ test1\
+-------- Test1.cpp
+```
+
+The file `CMakeLists.txt` will be:
+```cmake
+
+cmake_minimum_required(VERSION 3.5) # In order to get installed cmake version in Windows, in cmd type: cmake --version
+
+set(CMAKE_CXX_STANDARD 17)
+
+project(SenderReceiverTest)
+
+# For googleTest - Start
+enable_testing()
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+  )
+
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Turn off GoogleTest's global system installation scripts
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+# Setting INSTALL_GTEST OFF explicitly tells the engine to compile GoogleTest locally inside your build/ directory 
+# for Test1.exe to link against, but ignores copying any GoogleTest files out when building the install target sequence.
+
+FetchContent_MakeAvailable(googletest)
+# For googleTest - End
+
+# 1. Point CMake directly to the generated config files inside your built Boost folder
+set(Boost_DIR "G:/SenderReceiverTest/boost/boost_1_92_0/stage/lib/cmake/Boost-1.92.0")
+set(Boost_USE_STATIC_LIBS ON) # Recommended for Windows to avoid missing .dll errors
+
+
+find_package(Boost REQUIRED COMPONENTS "system")
+
+
+# Define the compiled shared library files
+# Since this CMakeLists.txt is inside 'src', paths are relative to 'src/'
+set(SHARED_LIB_FILES
+    src/Common/ExampleStruct.h
+    src/Common/ExampleStruct.cpp
+    src/Common/TcpBase.h
+    src/Common/TcpBase.cpp
+    src/Common/TcpClient.h
+    src/Common/TcpClient.cpp
+    src/Common/TcpServer.h
+    src/Common/TcpServer.cpp
+   )
+
+# Organize files into virtual folder "SharedLibrary" inside the Visual Studio project view:
+source_group("SharedLibrary" FILES ${SHARED_LIB_FILES})
+add_library(SharedLibrary STATIC ${SHARED_LIB_FILES})
+# Tell anyone linking against SharedLibrary where to find its headers.
+# PUBLIC ensures that Moon and Mars inherit this include directory automatically.
+# target_include_directories tells the compiler where to look on hard drive to find the header .h files 
+# when it encounters an #include statement.
+target_include_directories(SharedLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(SharedLibrary PUBLIC 
+                                      Boost::system
+                                      )
+
+set(moon "Moon")
+set(mars "Mars")
+add_executable(${moon} src/Moon/Moon.cpp)
+add_executable(${mars} src/Mars/Mars.cpp)
+
+target_include_directories(${moon} PRIVATE ${BOOST_INCLUDE_DIRS})
+target_include_directories(${mars} PRIVATE ${BOOST_INCLUDE_DIRS})
+
+target_link_libraries(${moon} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+target_link_libraries(${mars} PUBLIC 
+                                      Boost::system
+                                      SharedLibrary)
+
+install(TARGETS ${moon} ${mars} DESTINATION "${CMAKE_BINARY_DIR}/install")
+# When we generate buildsystem with "cmake -S src -B build", CMAKE_BINARY_DIR is set to "build".
+
+# For testing:
+add_executable(Test1 tests/test1/Test1.cpp)
+target_link_libraries(Test1 PRIVATE gtest gtest_main SharedLibrary)
+include(GoogleTest)
+gtest_discover_tests(Test1)
+install(TARGETS Test1 DESTINATION "${CMAKE_BINARY_DIR}/install")
+```
+In folder `/Common/` we have the struct `ExampleStruct`. We leave `ExampleStruct.cpp` empty but fill `ExampleStruct.h` as following:
+```c++
+#pragma once // To make sure that the header file is included only once during compilation.
+
+#include <iostream>
+
+/*
+An struct is going to be used for TCP data transfer between executables.
+The object of this struct must have a certain size. That is why we can not have objects of 
+dynamic containers like std::string or std::vector. "Dynamic container"s are designed to 
+grow and shrink in size dynamically. And this prevents the size of struct object to be fixed.
+
+More on char str[n], like char statusMessage[128]:
+Converting char statusMessage[128] to std::string is straightforward, because std::string has a constructor which
+accepts an array of chars. So we simply can say:
+std::string str = statusMessage;
+
+Even better is:
+std::string str(statusMessage, sizeof(statusMessage));
+
+Converting std::string str to char statusMessage[128]:
+First we clear the char buffer:
+std::fill_n(statusMessage, sizeof(statusMessage), '\0'); // Fills specific number of elements with a chosen value.
+
+Then we calculate how many characters we can safely copy:
+size_t copySize = std::min(str.size() , sizeof(statusMessage) - 1);
+
+Do the copy:
+std::copy(str.begin(), str.begin() + copySize , statusMessage);
+*/
+
+#pragma pack(push,1) // Prevents compiler alignment padding bytes
+
+struct ExampleStruct
+{
+  int64_t messageId;
+  double coordinates[2]; // [0] = Latitude, [1] = Longitude
+  char statusMessage[128];
+
+  void setStatusMessage(const std::string& str)
+  {
+    // Converting std::string str to char statusMessage[128]:
+    // First we clear the char buffer :
+    std::fill_n(statusMessage, sizeof(statusMessage), '\0'); // Fills specific number of elements with a chosen value.
+    // Then we calculate how many characters we can safely copy :
+    size_t copySize = std::min(str.size(), sizeof(statusMessage) - 1);
+    // Do the copy:
+    std::copy(str.begin(), str.begin() + copySize, statusMessage);
+  }
+
+  void print(const std::string& optional = "")
+  {
+    std::cout << optional << "ExampleStruct::messageId:"      << messageId      << std::endl;
+    std::cout << optional << "ExampleStruct::coordinates[0]:" << coordinates[0] << std::endl;
+    std::cout << optional << "ExampleStruct::coordinates[1]:" << coordinates[1] << std::endl;
+    std::cout << optional << "ExampleStruct::statusMessage:"  << statusMessage  << std::endl;
+  }
+};
+#pragma pack(pop)
+```
+Moreover, now we have the class `TcpBase`. This class includes everything we need to send and to receive TCP message. Here is the content of the class `TcpBase`:
+
+`TcpBase.h`:
+```c++
+#pragma once // To make sure that the header file is included only once during compilation.
+
+#include <iostream>
+
+#include <boost/asio.hpp>
+
+#include "ExampleStruct.h"
+
+namespace senderreceivertest::tcpbase // For this we need C++17.
+{
+class TcpBase
+{
+public:
+  TcpBase() = default;
+  TcpBase(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext);
+
+  void sendMessage(const ExampleStruct& exampleStruct);
+  ExampleStruct receiveMessage();
+
+protected:
+  boost::asio::io_context& m_ioContext; // Store a reference to the main engine
+  boost::asio::ip::tcp::socket m_socket;
+
+private:
+  boost::asio::streambuf m_buffer;
+};
+
+}; // namespace senderreceivertest::tcpbase
+```
+
+And `TcpBase.cpp`:
+```c++
+#include "TcpBase.h"
+
+namespace senderreceivertest::tcpbase // For this we need C++17.
+{
+TcpBase::TcpBase(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext) :
+  m_ioContext(ioContext),
+  m_socket(boost::asio::ip::tcp::socket(ioContext))
+{
+    std::cout << "Inside TcpBase. Hostname:\"" << hostName << "\", portNumber:" << portNumber << std::endl;
+}
+
+void TcpBase::sendMessage(const ExampleStruct& exampleStruct)
+{
+  try
+  {
+    // boost::asio::buffer: 
+    // 1. Checks where the input message on memory is. 
+    // 2. Checks the input message size. 3. Converts it to something that 
+    // can be sent via Boost.Asio.
+    // * Use boost::asio::buffer(&struct, sizeof(struct)) when sending data to avoid copying memory twice.
+    // * Use boost::asio::streambuf when receiving data if you want a flexible, dynamic staging ground to process incoming bytes.
+    // boost::asio::write: Puts/Writes the contents of the buffer byte-by-byte in the socket to send.
+    // boost::asio::write guarantees that execution will not move to the next line of code until your message is entirely sent 
+    // (or an unrecoverable network error occurs).
+    boost::asio::write(m_socket, boost::asio::buffer(&exampleStruct, sizeof(ExampleStruct)));
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "TcpBase::sendMessage() exception. Error message: " << e.what() << std::endl;
+  }
+}
+
+ExampleStruct TcpBase::receiveMessage()
+{
+  ExampleStruct exampleStruct;
+  try
+  {
+    // boost::asio::streambuf provides a memory buffer which can be resized dynamically. It makes the life easier and we have no buffer overflow.
+    // Buffer is a memory allocated on RAM. Received data lands in buffer.
+    // For reading from buffer, socket itself has the function boost::asio::ip::tcp::socket::read_some(). But this function is a low-level function
+    // and many things have to be considered in order to be able to use it properly.
+    // boost::asio::read is a high-level function which internally uses boost::asio::ip::tcp::socket::read_some(), but takes care of completion condition
+    // to make sure data is taken from buffer correctly.
+    // boost::asio::transfer_exactly is a "completion condition". boost::asio::read needs to know till when it should read the data and put in buffer.
+    // For this purpose, boost::asio::read needs to have a "completion condition" otherwise it explodes the buffer!
+    // boost::asio::read will block the code till the completion condition is fullfilled.
+    boost::asio::read(m_socket, m_buffer, boost::asio::transfer_exactly(sizeof(ExampleStruct)));
+
+    // Put the data from buffer in struct object:
+    std::istream istream(&m_buffer);
+    istream.read(reinterpret_cast<char*> (&exampleStruct), sizeof(ExampleStruct));
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "TcpBase::receiveMessage() exception. Error message: " << e.what() << std::endl;
+  }
+  return exampleStruct;
+}
+
+} //namespace senderreceivertest::tcpbase
+```
+The classes `TcpServer` and `TcpClient` both are derived from `TcpBase`. In the header `TcpServer.h` we have:
+```c++
+#pragma once // To make sure that the header file is included only once during compilation.
+
+#include <iostream>
+
+#include <boost/asio.hpp>
+
+#include "ExampleStruct.h"
+#include "TcpBase.h"
+
+namespace senderreceivertest::tcpserver // For this we need C++17.
+{
+class TcpServer : public senderreceivertest::tcpbase::TcpBase
+{
+public:
+  TcpServer() = delete;
+  TcpServer(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext);
+
+private:
+  boost::asio::ip::tcp::endpoint m_endpoint;
+  boost::asio::ip::tcp::acceptor m_acceptor;
+};
+}; // namespace senderreceivertest::tcpserver
+```
+And `TcpServer.cpp`:
+```c++
+#include "TcpServer.h"
+
+namespace senderreceivertest::tcpserver // For this we need C++17.
+{
+TcpServer::TcpServer(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext) :
+/*
+Below is initialization list. IMPORTANT: The order of variables in this list doesn't matter! They will be initialized based on their
+declaration order. In order to see the importance of the order, declare m_acceptor before m_endpoint!
+*/
+  TcpBase(hostName, portNumber, ioContext),
+  m_endpoint(boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), portNumber)),
+  m_acceptor(ioContext, m_endpoint)
+{
+  try
+  {
+    std::cout << "Server online. Waiting for client to connect on port " << portNumber << " ..." << std::endl;
+    m_acceptor.accept(m_socket);
+    // Here acceptor waits for connection to be established (blocks the program) and the socket to get activated...
+    // As soon as the connection is established, the acceptor polulates the connection details with socket and activates it.
+    // The acceptor has nothing more to do! Data exchange is carried out by socket.
+    std::cout << "Client connected to server successfully." << std::endl;
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "Exception at initialization of server. Error message: " << e.what() << std::endl;
+  }
+}
+
+}; // namespace senderreceivertest::tcpserver
+```
+
+In `TcpClient.h` we have:
+```c++
+#pragma once // To make sure that the header file is included only once during compilation.
+
+#include <iostream>
+
+#include <boost/asio.hpp>
+
+#include "ExampleStruct.h"
+#include "TcpBase.h"
+
+namespace senderreceivertest::tcpclient // For this we need C++17.
+{
+class TcpClient : public senderreceivertest::tcpbase::TcpBase
+{
+public:
+  TcpClient() = delete;
+  TcpClient(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext);
+
+private:
+  boost::asio::ip::tcp::resolver m_resolver;
+};
+
+}; // namespace senderreceivertest::tcpclient
+```
+
+And in `TcpClient.cpp`:
+```c++
+#include "TcpClient.h"
+
+namespace senderreceivertest::tcpclient // For this we need C++17.
+{
+TcpClient::TcpClient(const std::string& hostName, int32_t portNumber, boost::asio::io_context& ioContext) :
+  TcpBase(hostName, portNumber, ioContext),
+  m_resolver(boost::asio::ip::tcp::resolver(ioContext)) // boost::asio::ip::tcp::resolver creates a list of endpoints from given IP and port number.
+{
+  try
+  {
+    // Get the IP and port number and return a list of matching endpoints:
+    boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> endpoints = m_resolver.resolve(hostName, std::to_string(portNumber));
+
+    std::cout << "Attemptring to connect to server..." << std::endl;
+
+    // boost::asio::connect tries every endpoint till one gets connected. This will try for a while and if no success, will throw an exception:
+    // "No connection could be made because the target machine actively refused it"
+    // The list of endpoints obtained may contain both IPv4 and IPv6 endpoints, so we need to try each of them until we find one that works. 
+    // Having list of endpoints keeps the client program independent of a specific IP version.
+    boost::asio::connect(m_socket, endpoints);
+    std::cout << "Connected to server successfully." << std::endl;
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "Exception at initialization of client. Error message: " << e.what() << std::endl;
+  }
+}
+
+} // namespace senderreceivertest::tcpclient
+```
+Now we can rewrite the executables `Mars` and `Moon`. In `Mars.cpp` we have:
+```c++
+#include <iostream>
+#include <string>
+#include <istream>
+
+#include <boost/asio.hpp>
+
+#include "src/Common/TcpServer.h"
+
+/*
+Synchronous TCP server:
+Refs:
+https://www.boost.org/doc/libs/1_37_0/doc/html/boost_asio/overview/core/basics.html
+https://www.boost.org/doc/libs/1_92_0/doc/html/boost_asio/tutorial/tutdaytime2.html
+https://theboostcpplibraries.com/boost.asio-network-programming
+*/
+
+int main()
+{
+  std::cout << "Hello World by Mars (server)!" << std::endl;
+  try
+  {
+    int32_t portNumber = 12345;
+    // boost::asio::io_context is the modern replacement for boost::asio::io_service. It links our executable to I/O services of OS.
+    boost::asio::io_context ioContext;
+
+    senderreceivertest::tcpserver::TcpServer server("127.0.0.1", portNumber, ioContext); // Will wait till the clinet gets connected...
+    
+    ExampleStruct incomingStruct = server.receiveMessage();
+    std::cout << "Server received message from client in form of \"ExampleStruct\" object:" << std::endl;
+    incomingStruct.print("Received from client: ");
+
+    // Prepare reply (modify the received object to send it back):
+    std::cout << "Preparing reply to send to client ..." << std::endl;
+    incomingStruct.messageId += 20;
+    incomingStruct.coordinates[0] += 15;
+    incomingStruct.coordinates[1] -= 100;
+    incomingStruct.setStatusMessage("This is the reply. Received data should be: Id 97, co[0] -0.15, co[1] +121.221.");
+
+    // Send the reply. Notice that for sending message we use boost::asio::buffer and not boost::asio::streambuf:
+    server.sendMessage(incomingStruct);
+    std::cout << "Reply was sent to client successfully." << std::endl;
+  }
+  catch (std::exception& e)
+  {
+    std::cout << "Server exception. Error message: " << e.what() << std::endl;
+  }
+
+  return 0;
+}
+```
+
+And in `Moon.cpp`:
+```c++
+#include <iostream>
+#include <istream>
+
+#include <boost/asio.hpp>
+
+#include "src/Common/TcpClient.h"
+
+/*
+Refs:
+https://www.boost.org/doc/libs/1_92_0/doc/html/boost_asio/tutorial/tutdaytime1.html
+*/
+
+int main()
+{
+  std::cout << "Hello World by Moon (client)!" << std::endl;
+  try
+  {
+    int32_t portNumber = 12345;
+    boost::asio::io_context ioContext;
+
+    senderreceivertest::tcpclient::TcpClient client("127.0.0.1", portNumber, ioContext);
+
+    ExampleStruct exampleStruct;
+    exampleStruct.messageId = 77;
+    exampleStruct.coordinates[0] = -15.15;
+    exampleStruct.coordinates[1] = +221.221;
+    exampleStruct.setStatusMessage("This is a sample text message. Received data should be: Id 77, co[0] -15.15, co[1] +221.221.");
+
+    client.sendMessage(exampleStruct);
+    std::cout << "Sent object of type \"ExampleStruct\" to server successfully. Waiting for reply from server ..." << std::endl;
+
+    // Waiting for reply:
+    ExampleStruct exampleStructReply = client.receiveMessage(); // Blocks execution till message gets received.
+
+    // Print the result:
+    std::cout << "Reply received from server in form of \"ExampleStruct\" object:" << std::endl;
+    exampleStructReply.print("Reply received from server: ");
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "Client exception. Error message: " << e.what() << std::endl;
+  }
+  
+  return 0;
+}
+```
+For unittesting, we update the file `Test1.cpp` as following:
+```c++
+#include <iostream>
+#include <thread>
+#include <gtest/gtest.h>
+
+#include "src/Common/TcpServer.h"
+#include "src/Common/TcpClient.h"
+
+/*
+Ref: https://google.github.io/googletest/primer.html
+
+Use the TEST() macro to define and name a test function.
+The first argument is the name of the test suite, and the second argument is the test’s name within the test suite. 
+A test’s full name consists of its containing test suite and its individual name.
+Tests from different test suites can have the same individual name.
+GoogleTest groups the test results by test suites.
+*/
+TEST(NetworkTestSuite, NetworkTestName)
+{
+  int32_t portNumber = 12345;
+  // boost::asio::io_context is the modern replacement for boost::asio::io_service. It links our executable to I/O services of OS.
+
+  ExampleStruct message;
+  message.messageId = 77;
+  message.coordinates[0] = -15.15;
+  message.coordinates[1] = +221.221;
+  message.setStatusMessage("This is a sample text message. Received data should be: Id 77, co[0] -15.15, co[1] +221.221.");
+
+  ExampleStruct reply;
+
+  std::thread serverThread(
+    [&] // Capture clause: [&] Means capture everything from outer scope by reference.
+    ()  // Lambda input arguments. We don't need anything in here
+    {
+      boost::asio::io_context ioContext;
+      senderreceivertest::tcpserver::TcpServer server("127.0.0.1", portNumber, ioContext); // Will wait till the clinet gets connected...
+      ExampleStruct temp = server.receiveMessage();
+      temp.messageId += 20;
+      temp.coordinates[0] += 15;
+      temp.coordinates[1] -= 100;
+      temp.setStatusMessage("This is the reply. Received data should be: Id 97, co[0] -0.15, co[1] +121.221.");
+      server.sendMessage(temp);
+    }
+  );
+
+  // Give the server some time to bind to the port:
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+  std::thread clientThread(
+    [&]()
+    {
+      boost::asio::io_context ioContext;
+      senderreceivertest::tcpclient::TcpClient client("127.0.0.1", portNumber, ioContext);
+      client.sendMessage(message);
+      reply = client.receiveMessage();
+    }
+  );
+
+  // Before std::thread::join(), we must make sure that the thread is "joinable". Meaning:
+  // * Thread has started successfully.
+  // * It hasn't been "join"ed or "detach"ed.
+  // * It represents an active task in OS. Simply speaking: The OS has allocated memory for it.
+  // std::thread::join() tells the main thread to stop and wait for the background thread to finish execution.
+  if (serverThread.joinable()) { serverThread.join(); }
+  if (clientThread.joinable()) { clientThread.join(); }
+
+  EXPECT_EQ  (reply.messageId, 97);
+  EXPECT_NEAR(reply.coordinates[0], -0.15, 0.001);
+  EXPECT_NEAR(reply.coordinates[1], +121.221, 0.001);
+  // GoogleTest has a built-in macro, EXPECT_STREQ, specifically designed to compare raw char[] buffers against null-terminated strings. 
+  // It reads until the first \0 character, completely ignoring trailing unused padding:
+  EXPECT_STREQ(reply.statusMessage, "This is the reply. Received data should be: Id 97, co[0] -0.15, co[1] +121.221.");
+}
+```
+
+
+
+
