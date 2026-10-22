@@ -146,7 +146,6 @@ int main()
   }
 
   {
-    // "Hi" is already an address!!! I know! Hard to get!
     const char* ptr = "Hi"; // The compiler evaluates "Hi" to a memory address!!!
     std::cout << "ptr: " << ptr << std::endl;
     std::cout << "sizeof(ptr): " << sizeof(ptr) << ", strlen(ptr): " << strlen(ptr) << std::endl;
