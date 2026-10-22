@@ -166,6 +166,83 @@ sizeof(ptr): 8, strlen(ptr): 2
 ptr: Hi
 sizeof(ptr): 8, strlen(ptr): 2
 ```
+### Conversion between array of chars and `std::string`
+From array of chars to `std::string` is straight-forward. But the converse is a bit more tricky. Check the example:
+```c++
+#include <iostream>
+#include <cstring>
 
+int main()
+{
+  // ###############################
+  // Array of chars to std::string:
+  // ###############################
+  const char ch[] = "Hello World";
+  std::string str(ch);
+  std::cout << "str(ch): " << str << std::endl;
 
+  // ###############################
+  // std::string to array of chars:
+  // ###############################
+  std::string str2 = "Ay Yu";
+
+  // ##########
+  // If we need a read-only object:
+  // ##########
+  const char* readOnly = str2.c_str();
+  for (int i = 0; i < strlen(readOnly); i++)
+  {
+    // Notice that because we are using strlen(), the null character '\0' will not be printed; 
+    std::cout << "readOnly[" << i << "] = " << readOnly[i] << std::endl;
+  }
+
+  // ##########
+  // If we need to modify the object:
+  // ##########
+  // Important: std::string::size() or std::string::length() does not include the null character '\0'. Therefore we add 1 to size():
+  char ReadAndWrite[str2.size() + 1];
+  std::strncpy(ReadAndWrite, str2.c_str(), str2.size());
+  ReadAndWrite[str2.size()+1] = '\0'; // Null-terminate it!
+
+  ReadAndWrite[0] = 'S'; // Modify the first char.
+
+  std::cout << "ReadAndWrite: " << ReadAndWrite << std::endl;
+
+  // Notice how sizeof() includes null character '\0' and strlen() does not:
+  for (int i = 0; i < sizeof(ReadAndWrite); i++)
+  {
+    // Notice that because we are using strlen(), the null character '\0' will not be printed; 
+    std::cout << "ReadAndWrite[" << i << "] = " << ReadAndWrite[i] << std::endl;
+  }
+
+  for (int i = 0; i < strlen(ReadAndWrite); i++)
+  {
+    // Notice that because we are using strlen(), the null character '\0' will not be printed; 
+    std::cout << "ReadAndWrite[" << i << "] = " << ReadAndWrite[i] << std::endl;
+  }
+
+  return 0;
+}
+```
+Prints:
+```
+str(ch): Hello World
+readOnly[0] = A
+readOnly[1] = y
+readOnly[2] =  
+readOnly[3] = Y
+readOnly[4] = u
+ReadAndWrite: Sy Yu
+ReadAndWrite[0] = S
+ReadAndWrite[1] = y
+ReadAndWrite[2] =  
+ReadAndWrite[3] = Y
+ReadAndWrite[4] = u
+ReadAndWrite[5] = 
+ReadAndWrite[0] = S
+ReadAndWrite[1] = y
+ReadAndWrite[2] =  
+ReadAndWrite[3] = Y
+ReadAndWrite[4] = u
+```
 
