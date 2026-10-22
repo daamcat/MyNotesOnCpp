@@ -129,7 +129,7 @@ int main()
     char str[] = "Hi"; // Sets the chars in an array and closes it with char '\0'
     std::cout << "sizeof(str): " << sizeof(str) << ", strlen(str): " << strlen(str) << std::endl;
 
-    const char* ptr = &str[0];
+    const char* ptr = &str[0]; // In C++, we usually keep the pointer to array of chars as const pointer.
     std::cout << "ptr: " << ptr << std::endl;
     std::cout << "sizeof(ptr): " << sizeof(ptr) << ", strlen(ptr): " << strlen(ptr) << std::endl;
   }
@@ -147,7 +147,7 @@ int main()
 
   {
     // "Hi" is already an address!!! I know! Hard to get!
-    char* ptr = "Hi"; // The compiler evaluates "Hi" to a memory address!!!
+    const char* ptr = "Hi"; // The compiler evaluates "Hi" to a memory address!!!
     std::cout << "ptr: " << ptr << std::endl;
     std::cout << "sizeof(ptr): " << sizeof(ptr) << ", strlen(ptr): " << strlen(ptr) << std::endl;
   }
