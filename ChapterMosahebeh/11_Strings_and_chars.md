@@ -135,7 +135,49 @@ char str[] = "Blah";
 // Because the name "str" decays to the pointer to the first element of str, we can write:
 char* ptr = str; // This is exactly the same as: char* ptr = &str[0];
 ```
-An example:
+This is exactly what happens when you use `strcmp`. Notice the declaration of `strcmp`: 
+```c++
+int strcmp ( const char* str1, const char* str2 );
+```
+It accepts pointer to `char`, and not string. when you say `strcmp(str, "Hi")`, `str` decays to `&str[0]`, which is of type `char*`. Check below example:
+```c++
+#include <iostream>
+#include <cstring>
+
+int main()
+{
+  {
+    char str[] = "Hi"; // String literal. Sets the chars in an array and closes it with char '\0'
+    const char* ptr = str; // Works! Exactly equal to const char* ptr = &str[0];. Because c++ decays the name str to address of its first element, i.e. to &str[0] !!!
+
+    if (strcmp(str, "Hi") == 0) // Both str and "Hi" decay to pointer to address of the first char in array.
+    {
+      std::cout << "str and \"Hi\" are equal." << std::endl;
+    }
+    else
+    {
+      std::cout << "str and \"Hi\" are not equal." << std::endl;
+    }
+
+    if (strcmp(ptr, "Hi") == 0)
+    {
+      std::cout << "ptr and \"Hi\" are equal." << std::endl;
+    }
+    else
+    {
+      std::cout << "ptr and \"Hi\" are not equal." << std::endl;
+    }
+  }
+
+  return 0;
+}
+```
+Prints:
+```
+str and "Hi" are equal.
+ptr and "Hi" are equal.
+```
+Another example example:
 ```c++
 #include <iostream>
 #include <cstring>
