@@ -100,7 +100,7 @@ str and "Hi" are not equal.
 str and "Hi U" are equal.
 ```
 ### Strings and pointers
-If we have a char pointer, `char* p`, with this pointer we can store an array of chars, an string, pointing to the first char of array.
+If we have a char pointer, `char* ptr`, with this pointer we can store an array of chars, an string, pointing to the first char of array.
 
 ```c++
 #include <iostream>
