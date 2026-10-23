@@ -132,7 +132,8 @@ We normally keep *string literal* in a `const` array of `char`s. Now! c++, facin
 
 ```c++
 char str[] = "Blah";
-char* ptr = str; // Because the name "str" decays to the pointer to the first element of str!
+// Because the name "str" decays to the pointer to the first element of str, we can write:
+char* ptr = str; // This is exactly the same as: char* ptr = &str[0];
 ```
 An example:
 ```c++
