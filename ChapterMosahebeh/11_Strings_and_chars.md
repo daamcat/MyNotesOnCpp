@@ -235,7 +235,7 @@ sizeof(ptr): 8, strlen(ptr): 2
 ptr: Hi
 sizeof(ptr): 8, strlen(ptr): 2
 ```
-Notice that when `ptr` is a pointer to an `int`, in order to print the value, we use `*ptr`, but when `ptr` points to an array of chars, in order to print the string we use `ptr`.
+Notice that when `ptr` is a pointer to an `int`, in order to print the value, we use `*ptr` (*dereferencing*), but when `ptr` points to an array of chars, in order to print the string we use `ptr`. Because `std::cout`, like `strcmp` and all other C-style functions, accepts the `char*` pointer as its input argument. So we don't *dereference* it.
 ### Conversion between array of chars and `std::string`
 From array of chars to `std::string` is straight-forward. But the converse is a bit more tricky. Check the example:
 ```c++
