@@ -139,7 +139,7 @@ This is exactly what happens when you use `strcmp`. Notice the declaration of `s
 ```c++
 int strcmp ( const char* str1, const char* str2 );
 ```
-It accepts pointer to `char`, and not string. when you say `strcmp(str, "Hi")`, `str` decays to `&str[0]`, which is of type `char*`. Check below example:
+It accepts pointer to `char`, and not string. when you say `strcmp(str, "Hi")`, `str` decays to `&str[0]`, which is of type `char*`. Exactly the same happens to `"Hi"`: it decays to the address of its first character, which is again of type `char*`. Check below example:
 ```c++
 #include <iostream>
 #include <cstring>
