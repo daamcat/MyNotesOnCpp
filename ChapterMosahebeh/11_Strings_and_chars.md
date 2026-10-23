@@ -145,8 +145,8 @@ int main()
   {
     // For ints we had:
     int a = 5;
-    int* p = &a;
-    std::cout<< "P = " << p << ", *p = " << *p << ", a = " << ", &a = " << &a << std::endl;
+    int* ptr = &a;
+    std::cout<< "ptr = " << ptr << ", *ptr = " << *ptr << ", a = " << ", &a = " << &a << std::endl;
   }
 
   // Below three are equal:
@@ -181,7 +181,7 @@ int main()
 ```
 Prints:
 ```
-P = 0x7fff259adbbc, *p = 5, a = , &a = 0x7fff259adbbc
+ptr = 0x7ffdda48d20c, *ptr = 5, a = , &a = 0x7ffdda48d20c
 sizeof(str): 3, strlen(str): 2
 ptr: Hi
 sizeof(ptr): 8, strlen(ptr): 2
@@ -191,6 +191,7 @@ sizeof(ptr): 8, strlen(ptr): 2
 ptr: Hi
 sizeof(ptr): 8, strlen(ptr): 2
 ```
+Notice that when `ptr` is a pointer to an `int`, in order to print the value, we use `*ptr`, but when `ptr` points to an array of chars, in order to print the string we use `ptr`.
 ### Conversion between array of chars and `std::string`
 From array of chars to `std::string` is straight-forward. But the converse is a bit more tricky. Check the example:
 ```c++
