@@ -10,21 +10,21 @@ The following example shows how we can utilize an array of chars for strings:
 
 int main()
 {
-  char str[] = "Hi"; // Sets the chars in an array and closes it with char '\0'
+  char str[] = "Hi U"; // Sets the chars in an array and closes it with char '\0'
   std::cout << "sizeof(str): " << sizeof(str) << ", strlen(str): " << strlen(str) << std::endl;
   for(int i = 0; i < sizeof(str); i++)
   {
     std::cout << "str[" << i << "] = " << str[i] << std::endl;
   }
   
-  char str2[8] = "Hi";
+  char str2[8] = "Hi U";
   std::cout << "sizeof(str2): " << sizeof(str2) << ", strlen(str2): " << strlen(str2) << std::endl;
   for(int i = 0; i < sizeof(str2); i++)
   {
     std::cout << "str2[" << i << "] = " << str2[i] << std::endl;
   }
 
-  char str3[] = {'H','i','\0'};
+  char str3[] = {'H','i', ' ', 'U', '\0'};
   std::cout << "sizeof(str3): " << sizeof(str3) << ", strlen(str3): " << strlen(str3) << std::endl;
   for(int i = 0; i < sizeof(str3); i++)
   {
@@ -49,31 +49,55 @@ int main()
   {
     std::cout<< "str and str3 are not equal." << std::endl;
   }
+
+  if (strcmp(str,"Hi") == 0)
+  {
+    std::cout<< "str and \"Hi\" are equal." << std::endl;
+  }
+  else
+  {
+    std::cout<< "str and \"Hi\" are not equal." << std::endl;
+  }
+
+  if (strcmp(str,"Hi U") == 0)
+  {
+    std::cout<< "str and \"Hi U\" are equal." << std::endl;
+  }
+  else
+  {
+    std::cout<< "str and \"Hi U\" are not equal." << std::endl;
+  }
   
   return 0;
 }
 ```
-Prints (notice the empty outputs are in fact `'\0'`):
+Prints (notice the empty outputs are in fact `'\0'`, and notice that `'\0'` is totally different than *space* character):
 ```
-sizeof(str): 3, strlen(str): 2
+sizeof(str): 5, strlen(str): 4
 str[0] = H
 str[1] = i
-str[2] = 
-sizeof(str2): 8, strlen(str2): 2
+str[2] =  
+str[3] = U
+str[4] = 
+sizeof(str2): 8, strlen(str2): 4
 str2[0] = H
 str2[1] = i
-str2[2] = 
-str2[3] = 
+str2[2] =  
+str2[3] = U
 str2[4] = 
 str2[5] = 
 str2[6] = 
 str2[7] = 
-sizeof(str3): 3, strlen(str3): 2
+sizeof(str3): 5, strlen(str3): 4
 str3[0] = H
 str3[1] = i
-str3[2] = 
+str3[2] =  
+str3[3] = U
+str3[4] = 
 str and str2 are equal.
 str and str3 are equal.
+str and "Hi" are not equal.
+str and "Hi U" are equal.
 ```
 ### Strings and pointers
 If we have a char pointer, `char* p`, with this pointer we can store an array of chars, an string, pointing to the first char of array.
