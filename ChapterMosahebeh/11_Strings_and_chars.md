@@ -177,7 +177,9 @@ Prints:
 str and "Hi" are equal.
 ptr and "Hi" are equal.
 ```
-Another example example:
+Functions that deal with C-strings **always** want the starting memory address (e.g., we would declare the function for printing an string with something like: `void printStr(const char* x)`). They handle the unpacking of characters internally.
+
+Another example:
 ```c++
 #include <iostream>
 #include <cstring>
