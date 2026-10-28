@@ -305,7 +305,7 @@ int32_t size: 4
 sizeof(int32_t): 4, sizeof(int64_t): 8
 sizeof(Car): 40
 ```
-Notice that the type of `i` is not `int32_t`. The type of `i` is `a pointer to int32_t`. So when we say `j = i + 1`, this is not that we add `1` to an `int`. The unit of `1` is not `int`. The unit of `1` is `int32_t*`. So `j` and `i` have one unit distance from each other. Unit `int32_t*`. Now in order to convert these addresses to int, we use the casting `reinterpret_cast<std::uintptr_t>`. We read `std::unitptr_t` _is an unsigned integer type that is capable of storing a data pointer_.
+Notice that the type of `i` is not `int32_t`. The type of `i` is `a pointer to int32_t`. So when we say `j = i + 1`, this is not that we add `1` to an `int`. The unit of `1` is not `int`. The unit of `1` is `int32_t*`. So `j` and `i` have one unit distance from each other. Unit `int32_t*`. Now in order to convert these addresses to int, we use the casting `reinterpret_cast<std::uintptr_t>`. We read `std::uintptr_t` _is an unsigned integer type that is capable of storing a data pointer_.
 
 ### typedef and using (none of them are really important or very useful!)
 In C++ we rarely use `typedef` and prefer `using` more. But at the end, they both are not very useful! With `typedef` we give a data type another name, or as we may read in documentrations, with `typedef` and `using` we create *type alias*:
