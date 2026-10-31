@@ -33,7 +33,7 @@ int main (int argc, char* argv[])
   return 0;
 }
 ```
-*Class template* lets us to write the logic once, and then to use it for different data types. A simple example from class template:
+*Class template* lets us write the logic once, and then to use it for different data types. A simple example from class template:
 ```c++
 #include <iostream>
 #include <string>
