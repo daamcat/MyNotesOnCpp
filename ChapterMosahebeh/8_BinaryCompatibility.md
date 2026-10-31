@@ -15,21 +15,20 @@ This compiler-generated binary library file is:
 This binary library can be used in our application, if we *link against* it.
 
 #### Binary compatibility
-Imagine we have a C++ application, app.exe, which uses our library, libMyLibV1.so:
+Imagine we have a C++ application, app.exe, which uses our library, libMyLib.so:
 ```
              compile
 app.cpp ───────────────► app.exe
                            │
                            │ uses
                            ▼
-                     libMyLibV1.so
+                     libMyLib.so
 ```
-Now imagine we make some changes in libMyLibV1.so and build the second version of binary library, libMyLibV2.so.
+Now imagine we make some changes in libMyLib.so and build the second version of binary library, libMyLib.so.
 
-If we can replace libMyLibV1.so with libMyLibV2.so without needing to recompile the app.cpp to app.exe, our changes in library is *binary compatible*. Otherwise the changes are *binary incompatible*. If the changes are *binary incompatible*, the whole application must be compiled and built again. This means the process from app.cpp to app.exe.
+If we can replace libMyLib.so with updated one without needing to recompile the app.cpp to app.exe, our changes in library is *binary compatible*. Otherwise the changes are *binary incompatible*. If the changes are *binary incompatible*, the whole application must be compiled and built again. This means the process from app.cpp to app.exe.
 
-*Binary compatibility* can be important because for example we have already sold app.exe to customer. In this case we only replace libMyLibV1.so with libMyLibV2.so and app.exe will keep working. With having *binary incompatible* changes in libMyLibV2.so, the application app.exe will crash
-as soon as the client starts to run it.
+*Binary compatibility* can be important because for example we have already sold app.exe to customer. In this case we only replace libMyLib.so with updated libMyLib.so and app.exe will keep working. With having *binary incompatible* changes in libMyLib.so, the application app.exe will crash as soon as the client starts to run it.
 
 ####
 An example of binary incompatible change in class would be having a class like below in library:
