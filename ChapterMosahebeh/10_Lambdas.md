@@ -10,9 +10,9 @@ The syntax for lambdas is like the following:
      |    |
      |    |                                         lambda body
      |    |                                             |
-     ▼    ▼                                             ▼
+     ▼   ▼                                            ▼
      []  ()  specifiers exception attr  -> <type> {  /* code */ }
-                ▲                           ▲                            
+                ▲                          ▲                            
                 |                           |
                 |                           |
                 |                           trailing return type
